@@ -1,0 +1,8 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+always, before making cahnges, try to find the issue in the entity and enties related to current one, and then try to solve the issue.
+the react-router-dom was upgraded to react-router
+review the implementation of backend and frontend for a certain thing to evaluate the chnages needed.
