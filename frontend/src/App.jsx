@@ -29,6 +29,7 @@ import VerifyEmail from './components/VerifyEmail'
 import GoogleAuthHandler from './components/GoogleAuthHandler'
 import FacebookAuthHandler from './components/FacebookAuthHandler'
 import Footer from './components/Footer'
+import BookingStepper from './pages/BookingStepper'
 
 // Create a theme instance
 const theme = createTheme({
@@ -142,7 +143,16 @@ function AppContent() {
 				<Route
 					path="/events/:eventId/packages/:event_date_id/plane/:packageId/group-size/:groupSize/accommodation/:aId/rooms/:roomIds/review"
 					element={<ReviewPackage />}
+				
 				/>
+				<Route 
+					path="/events/:eventId/packages/:event_date_id/plane/:packageId/booking/:step" 
+					element={<BookingStepper />} 
+					/>
+				<Route 
+					path="/events/:eventId/packages/:event_date_id/booking/:step" 
+					element={<BookingStepper />} 
+					/>
 				<Route path="/booking-success" element={<BookingSuccess />} />
 				<Route path="/booking/success" element={<PaymentSuccess />} />
 				<Route path="/booking/cancel" element={<PaymentCancel />} />
