@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router'
+import { Link } from 'react-router'
 import {
 	Box,
 	Container,
@@ -15,6 +15,7 @@ import {
 	DialogActions,
 	TextField,
 	Stack,
+	Rating,
 } from '@mui/material'
 import { ChevronRight } from 'lucide-react'
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'
@@ -25,10 +26,9 @@ import api from '../utils/api'
 import Carousel from '../components/Carousel'
 import { useDispatch } from 'react-redux'
 import { setDates } from '../store/slices/bookingSlice'
+import Hotel from '../assets/images/Hotel.png'
 
-export default function AccommodationSelection() {
-	const navigate = useNavigate()
-	const { eventId, event_date_id, packageId, groupSize } = useParams()
+export default function AccommodationSelection({packageId, onNext, setBookingData, bookingData}) {
 	const [accommodations, setAccommodations] = useState([])
 	const [selectedHotel, setSelectedHotel] = useState(null)
 	const [dateDialogOpen, setDateDialogOpen] = useState(false)
@@ -36,6 +36,8 @@ export default function AccommodationSelection() {
 	const [checkOutDate, setCheckOutDate] = useState(null)
 	const [dateError, setDateError] = useState('')
 	const [groupSizeData, setGroupSizeData] = useState(null)
+
+	console.log("bookingData in AccommodationSelection", bookingData)
 	const MIN_STAY = 1 // Minimum number of nights required
 	const dispatch = useDispatch()
 	useEffect(() => {
@@ -52,8 +54,8 @@ export default function AccommodationSelection() {
 
 		const fetchGroupSizeData = async () => {
 			try {
-				const response = await api.get(`events/group-sizes/${groupSize}`)
-				setGroupSizeData(response.data.group_size)
+				const response = await api.get(`events/group-sizes/${bookingData.groupSize}`)
+				setGroupSizeData(response.data.id)
 			} catch (error) {
 				console.error('Error fetching group size data:', error)
 			}
@@ -61,7 +63,8 @@ export default function AccommodationSelection() {
 
 		fetchAccommodations()
 		fetchGroupSizeData()
-	}, [packageId, groupSize])
+	}, [packageId, bookingData.groupSize])
+
 
 	const handleSelectHotel = (hotel) => {
 		setSelectedHotel(hotel)
@@ -117,169 +120,95 @@ export default function AccommodationSelection() {
 			})
 		)
 		// Navigate to rooms page with dates
-		navigate(
-			`/events/${eventId}/packages/${event_date_id}/plane/${packageId}/group-size/${groupSize}/accommodation/${selectedHotel.id}/rooms`,
-			{
-				state: {
-					checkInDate: checkInDate.toISOString(),
-					checkOutDate: checkOutDate.toISOString(),
-					nights: calculatedNights,
-				},
-			}
-		)
+		setBookingData({
+			checkInDate: checkInDate.toISOString(),
+			checkOutDate: checkOutDate.toISOString(),
+			nights: calculatedNights,
+			aId: accommodations[0].id,
+			roomId: null,
+			groupSize: groupSizeData,
+		})
+		onNext()
 	}
-
-	// Calculate total price based on selected dates
-	// const calculateTotalPrice = () => {
-	// 	if (!selectedHotel || !checkInDate || !checkOutDate) return 0
-	// 	const calculatedNights = calculateNights(checkInDate, checkOutDate)
-	// 	return parseFloat(
-	// 		selectedHotel.price * (parseInt(groupSizeData) || 2) * calculatedNights
-	// 	).toFixed(2)
-	// }
 
 	return (
 		<Box className="min-h-screen bg-transparent text-white">
-			<Header />
-			<Container maxWidth="lg" sx={{ pt: 12, pb: 8 }}>
-				{/* Breadcrumb Navigation */}
-				<Breadcrumbs
-					separator={<ChevronRight size={16} color="#F821DB" />}
-					sx={{ mb: 4 }}
-				>
-					<Link
-						to={`/events/${eventId}/packages/${event_date_id}`}
-						style={{
-							color: 'white',
-							textDecoration: 'none',
-						}}
-					>
-						Packages
-					</Link>
-					<Link
-						to={`/events/${eventId}/packages/${event_date_id}/plane/${packageId}/group-size`}
-						style={{
-							color: 'white',
-							textDecoration: 'none',
-						}}
-					>
-						Group Size
-					</Link>
-					<Typography color="primary">Accommodation</Typography>
-					<Typography color="white">Rooms</Typography>
-					<Typography color="white">Add-ons</Typography>
-					<Typography color="white">Review</Typography>
-				</Breadcrumbs>
-
+			<Container maxWidth="lg" sx={{ pt: 6, pb: 8 }}>
 				{/* Main Content */}
 				<Box sx={{ maxWidth: 1200, mx: 'auto' }}>
-					<Typography variant="h3" component="h1" gutterBottom>
+					<Typography variant="h5" component="h4" gutterBottom>
 						Choose Your Accommodation
 					</Typography>
 
-					{/* Hotel Cards */}
-					<Box
-						sx={{
-							display: 'grid',
-							gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' },
-							gap: 3,
-							mt: 4,
-						}}
-					>
-						{accommodations.map((hotel) => (
-							<Card
-								key={hotel.id}
+						<Box sx={{ mt: 2 ,}}>
+							<Box
 								sx={{
-									height: '100%',
-									display: 'flex',
-									flexDirection: 'column',
-									backgroundColor: 'rgba(255, 255, 255, 0.2)',
+									backgroundColor: 'rgba(255, 255, 255, 0.13)',
 									borderRadius: 2,
-									'&:hover': {
-										boxShadow: 6,
-									},
+									overflow: 'hidden',
+									boxShadow: 3,
 								}}
 							>
-								<Carousel images={hotel.images} alt={hotel.title} />
-								<CardContent
-									sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}
-								>
-									<Typography
-										variant="h5"
-										component="h2"
-										color="white"
-										gutterBottom
-									>
-										{hotel.title}
-									</Typography>
-									<Typography variant="subtitle2" color="primary.main">
-										May 22 - 24, 2025{' '}
-										<Typography
-											component="span"
-											variant="caption"
-											color="primary.main"
-										>
-											(Additional Nights Available)
-										</Typography>
-									</Typography>
-									<Typography
-										variant="body2"
-										color="rgba(255, 255, 255, 0.8)"
-										sx={{ mt: 2, mb: 'auto' }}
-									>
-										{hotel.description.replace(/\*\*.*?\.\s*/, '')}
-									</Typography>
-									<Box sx={{ mt: 3 }}>
-										<Typography
-											variant="caption"
-											color="rgba(255, 255, 255, 0.8)"
-											paragraph
-										>
-											{hotel.description.match(/\*\*.*?\./)?.[0] || ''}
-										</Typography>
-										<Typography
-											variant="h5"
-											color="primary.main"
-											gutterBottom
-											align="center"
-										>
-											From ${parseFloat(hotel.price).toFixed(2)} USD
-											<Typography
-												component="span"
-												variant="body2"
-												color="white"
-												sx={{ ml: 1 }}
-											>
-												/ Person
+								<Box sx={{ p : 3}}>
+									<Box sx={{ width: { xs: '100%' , }  , maxHeight: { xs: '600px'} , position: 'relative'}}>
+										<img src={Hotel} alt="Hotel" />
+									</Box>
+									<Box sx={{ 
+										width: { xs: '100%'}, 
+										p: 4,
+										display: 'flex',
+										flexDirection: 'column',
+										justifyContent: 'space-between',
+										position: 'relative'
+									}}>
+										<Box>
+											<Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2, justifyContent: 'space-between' }}>
+												<Typography variant="h4" component="h2" color="white" gutterBottom>
+													The Palazzo at The Venetian Resort
+												</Typography>
+												<Rating
+												value={5}
+													color={'#F821DB'}
+													readOnly
+													sx={{ color: '#F821DB', fontSize: '2rem' }}
+												/>
+											</Box>
+
+											<Typography variant="subtitle1" color="rgba(255, 255, 255, 0.8)">
+												3325 S Las Vegas Blvd, Las Vegas, NV 89109
 											</Typography>
-										</Typography>
-										<Typography
-											variant="body2"
-											align="center"
-											color="rgba(255, 255, 255, 0.8)"
-											paragraph
-										>
-											$
-											{parseFloat(
-												hotel.price * (parseInt(groupSizeData) || 2)
-											).toFixed(2)}{' '}
-											USD Total (Taxes and fees included)
-											<br />
-											*Price shown based on {groupSizeData || 2} people
-										</Typography>
+											<Typography
+												variant="body2"
+												color="rgba(255, 255, 255, 0.5)"
+												sx={{ mt: 3, mb: 2 }}
+											>
+												**The Venetian Resort has a standard Las Vegas Resort Fee of
+												$62.36 inclusive of tax per night, payable upon check-in as well as $150 incidental hold per night.
+												The iconic resort experience is marked by a commitment to sophisticated play and light-hearted luxury,
+												 with world-class restaurants from celebrated chefs; the rejuvenating Canyon Ranch spa + fitness; a 
+												 five-acre pool and garden deck inspired by the Italian Riviera including TAO Beach Dayclub, a 
+												 Balinese-inspired tropical oasis; two landmark casinos and a poker room and unparalleled retail 
+												 experiences at Grand Canal Shoppes.
+											</Typography>
+										</Box>
+										
 										<Button
 											variant="contained"
 											color="primary"
-											fullWidth
-											onClick={() => handleSelectHotel(hotel)}
+											
+											onClick={() => handleSelectHotel(accommodations[0])}
+											sx={{ mt: 2 , mx: 'auto', width: '400px'}}
 										>
-											Select Hotel
+											Next
 										</Button>
+
+										<Typography variant="subtitle1" color="rgba(255, 255, 255, 0.8)" sx={{ position: 'absolute', bottom: 0, right: 0 , cursor: 'pointer'}}>
+											Skip
+										</Typography>
 									</Box>
-								</CardContent>
-							</Card>
-						))}
-					</Box>
+								</Box>
+							</Box>
+						</Box>
 				</Box>
 
 				{/* Date Selection Dialog */}
@@ -290,110 +219,192 @@ export default function AccommodationSelection() {
 						maxWidth="sm"
 						fullWidth
 						slotProps={{
-							paper: {
-								sx: {
-									backgroundColor: 'rgba(255, 255,255, 0.8)',
-									// backdropFilter: 'blur(10px)',
-									color: 'black',
-								},
+						paper: {
+							sx: {
+							backgroundColor: '#1E1E1E',
+							backgroundImage: 'linear-gradient(rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.05))',
+							color: '#FFFFFF',
+							borderRadius: '12px',
+							border: '1px solid rgba(255, 255, 255, 0.1)',
+							boxShadow: '0 8px 32px rgba(0, 0, 0, 0.36)',
 							},
+						},
 						}}
 					>
-						<DialogTitle>
-							<Typography variant="h5" component="div">
-								Select Your Stay Dates
-							</Typography>
-							<Typography variant="subtitle2">
-								{selectedHotel?.title}
-							</Typography>
+						<DialogTitle sx={{ py: 3 }}>
+						<Typography
+							variant="h4"
+							component="div"
+							color="#FF4BEF"
+							textAlign="center"
+							fontWeight={600}
+							letterSpacing={-0.5}
+						>
+							Select Your Stay Dates
+						</Typography>
+						<Typography
+							variant="subtitle1"
+							color="rgba(255, 255, 255, 0.8)"
+							textAlign="center"
+							mt={2}
+							sx={{
+							background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent)',
+							py: 1,
+							mx: 'auto',
+							maxWidth: '80%',
+							}}
+						>
+							{selectedHotel?.title}
+						</Typography>
 						</DialogTitle>
-						<DialogContent>
-							<Stack spacing={3} sx={{ mt: 2 }}>
-								<Typography variant="body2">
-									Please select your check-in and check-out dates. Minimum stay
-									is {MIN_STAY} nights.
-								</Typography>
-								<Box sx={{ display: 'flex', gap: 2 }}>
-									<DatePicker
-										label="Check-in Date"
-										value={checkInDate}
-										onChange={(newValue) =>
-											handleDateChange(newValue, 'checkIn')
-										}
-										minDate={new Date()}
-										renderInput={(params) => (
-											<TextField {...params} fullWidth />
-										)}
-									/>
-
-									<DatePicker
-										label="Check-out Date"
-										value={checkOutDate}
-										onChange={(newValue) =>
-											handleDateChange(newValue, 'checkOut')
-										}
-										minDate={checkInDate || new Date()}
-										renderInput={(params) => (
-											<TextField {...params} fullWidth />
-										)}
+						<DialogContent sx={{ py: 2 }}>
+						<Stack spacing={5}>
+							<Typography 
+							variant="body1" 
+							color="rgba(255, 255, 255, 0.7)" 
+							textAlign="center"
+							sx={{
+								px: 2,
+							}}
+							>
+							Please select your check-in and check-out dates. Minimum stay is {MIN_STAY} nights.
+							</Typography>
+							<Box sx={{ 
+								display: 'flex', 
+								gap: 2, 
+								justifyContent: 'center',
+								alignItems: 'center',
+								}}>
+								<Box sx={{ width: '100%', position: 'relative' }}>
+									<label htmlFor="checkin-date" style={{
+									position: 'absolute',
+									top: '-8px',
+									left: '12px',
+									fontSize: '12px',
+									padding: '0 4px',
+									color: 'rgba(255, 255, 255, 0.9)',
+									zIndex: 1,
+									}}>
+									Check-in Date
+									</label>
+									<input
+									id="checkin-date"
+									type="date"
+									value={checkInDate ? checkInDate.toISOString().split('T')[0] : ''}
+									onChange={(e) => handleDateChange(new Date(e.target.value), 'checkIn')}
+									min={new Date().toISOString().split('T')[0]}
+									style={{
+										width: '100%',
+										padding: '14px',
+										borderRadius: '4px',
+										backgroundColor: 'transparent',
+										border: '1px solid rgba(255, 255, 255, 0.1)',
+										color: 'rgba(255, 255, 255, 0.9)',
+										fontSize: '16px',
+										outline: 'none',
+									}}
 									/>
 								</Box>
 
-								{/* {checkInDate && checkOutDate && (
-									<Box
-										sx={{
-											p: 2,
-											bgcolor: 'background.default',
-											borderRadius: 1,
-											border: '1px solid',
-											borderColor: 'divider',
-										}}
-									>
-										<Typography variant="subtitle1" gutterBottom>
-											Stay Summary
-										</Typography>
-										<Typography variant="body2">
-											{checkInDate.toLocaleDateString()} -{' '}
-											{checkOutDate.toLocaleDateString()}
-										</Typography>
-										<Typography variant="body2" color="text.secondary">
-											{calculateNights(checkInDate, checkOutDate)} nights
-										</Typography>
-										<Typography variant="body2" sx={{ mt: 1 }}>
-											Estimated Total: ${calculateTotalPrice()} USD
-											<Typography
-												component="span"
-												variant="caption"
-												color="text.secondary"
-												sx={{ ml: 1 }}
-											>
-												(Taxes and fees included)
-											</Typography>
-										</Typography>
-									</Box>
-								)} */}
-
-								{dateError && (
-									<Typography color="error" variant="body2">
-										{dateError}
-									</Typography>
-								)}
-							</Stack>
-						</DialogContent>
-						<DialogActions>
-							<Button onClick={handleDateDialogClose}>Cancel</Button>
-							<Button
-								onClick={handleDateSelection}
-								variant="contained"
-								color="primary"
-								disabled={
-									!checkInDate ||
-									!checkOutDate ||
-									calculateNights(checkInDate, checkOutDate) < MIN_STAY
-								}
+								<Box sx={{ width: '100%', position: 'relative' }}>
+									<label htmlFor="checkout-date" style={{
+									position: 'absolute',
+									top: '-8px',
+									left: '12px',
+									fontSize: '12px',
+									padding: '0 4px',
+									color: 'rgba(255, 255, 255, 0.9)',
+									zIndex: 1,
+									}}>
+									Check-out Date
+									</label>
+									<input
+									id="checkout-date"
+									type="date"
+									value={checkOutDate ? checkOutDate.toISOString().split('T')[0] : ''}
+									onChange={(e) => handleDateChange(new Date(e.target.value), 'checkOut')}
+									min={checkInDate ? checkInDate.toISOString().split('T')[0] : new Date().toISOString().split('T')[0]}
+									style={{
+										width: '100%',
+										padding: '14px',
+										borderRadius: '4px',
+										backgroundColor: 'transparent',
+										border: '1px solid rgba(255, 255, 255, 0.1)',
+										color: 'rgba(255, 255, 255, 0.9)',
+										fontSize: '16px',
+										outline: 'none',
+									}}
+									/>
+								</Box>
+							</Box>
+							{dateError && (
+							<Box
+								sx={{
+								backgroundColor: 'rgba(255, 50, 50, 0.1)',
+								borderLeft: '3px solid #FF4BEF',
+								p: 1.5,
+								borderRadius: '4px',
+								}}
 							>
-								Continue
-							</Button>
+								<Typography color="#FF4BEF" variant="body2" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+								<ErrorOutline fontSize="small" />
+								{dateError}
+								</Typography>
+							</Box>
+							)}
+						</Stack>
+						</DialogContent>
+						<DialogActions sx={{ 
+						px: 3, 
+						py: 2, 
+						borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+						gap: 1,
+						}}>
+						<Button 
+							onClick={handleDateDialogClose}
+							sx={{
+							color: 'rgba(255, 255, 255, 0.7)',
+							px: 3,
+							py: 1,
+							borderRadius: '8px',
+							border: '1px solid rgba(255, 255, 255, 0.2)',
+							'&:hover': {
+								backgroundColor: 'rgba(255, 255, 255, 0.08)',
+								borderColor: 'rgba(255, 255, 255, 0.4)',
+							},
+							}}
+						>
+							Cancel
+						</Button>
+						<Button
+							onClick={handleDateSelection}
+							variant="contained"
+							disabled={
+							!checkInDate ||
+							!checkOutDate ||
+							calculateNights(checkInDate, checkOutDate) < MIN_STAY
+							}
+							sx={{
+							background: 'linear-gradient(45deg, #FF4BEF, #E100FF)',
+							color: 'white',
+							fontWeight: 600,
+							px: 3,
+							py: 1,
+							borderRadius: '8px',
+							textTransform: 'none',
+							fontSize: '0.9375rem',
+							'&:hover': {
+								background: 'linear-gradient(45deg, #FF4BEF, #C000FF)',
+							},
+							'&.Mui-disabled': {
+								background: 'rgba(255, 255, 255, 0.12)',
+								color: 'rgba(255, 255, 255, 0.3)',
+								boxShadow: 'none',
+							},
+							}}
+						>
+							Continue
+						</Button>
 						</DialogActions>
 					</Dialog>
 				</LocalizationProvider>

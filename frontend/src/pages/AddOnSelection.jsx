@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router'
+import { Link } from 'react-router'
 import {
 	Box,
 	Container,
@@ -19,14 +19,10 @@ import {
 	ListItemText,
 } from '@mui/material'
 import { ChevronRight, EditIcon, DeleteIcon } from 'lucide-react'
-import Header from '../components/Header'
 import AddOnDetailsDialog from '../components/AddOnDetailsDialog'
 import api from '../utils/api'
 
-export default function AddOnSelection() {
-	const navigate = useNavigate()
-	const { eventId, event_date_id, packageId, groupSize, aId, roomId } =
-		useParams()
+export default function AddOnSelection({eventId, event_date_id,bookingData,setBookingData,onNext}) {
 	const [addOns, setAddOns] = useState([])
 	const [selectedAddOns, setSelectedAddOns] = useState([])
 	const [dialogOpen, setDialogOpen] = useState(false)
@@ -131,23 +127,19 @@ export default function AddOnSelection() {
 	}
 
 	const handleNext = () => {
-		// Pass the complete selected add-ons data to the review page
-		navigate(
-			`/events/${eventId}/packages/${event_date_id}/plane/${packageId}/group-size/${groupSize}/accommodation/${aId}/rooms/${roomId}/review`,
-			{
-				state: {
-					selectedAddOns: selectedAddOns.map((item) => ({
-						addOn: item.addOn,
-						timeSlots: item.timeSlots,
-						quantity: item.timeSlots.reduce(
-							(sum, slot) => sum + slot.quantity,
-							0
-						),
-						totalPrice: item.totalPrice,
-					})),
-				},
-			}
-		)
+		setBookingData({
+			...bookingData,
+			selectedAddOns: selectedAddOns.map((item) => ({
+				addOn: item.addOn,
+				timeSlots: item.timeSlots,
+				quantity: item.timeSlots.reduce(
+					(sum, slot) => sum + slot.quantity,
+					0
+				),
+				totalPrice: item.totalPrice,
+			})),
+		})
+		onNext();
 	}
 
 	if (loading) {
@@ -168,53 +160,7 @@ export default function AddOnSelection() {
 
 	return (
 		<Box className="min-h-screen bg-transparent text-white">
-			<Header />
 			<Container maxWidth="xl" sx={{ pt: 12, pb: 8 }}>
-				{/* Breadcrumb Navigation */}
-				<Breadcrumbs
-					separator={<ChevronRight size={16} color="#F821DB" />}
-					sx={{ mb: 4 }}
-				>
-					<Link
-						to={`/events/${eventId}/packages/${event_date_id}`}
-						style={{
-							color: 'white',
-							textDecoration: 'none',
-						}}
-					>
-						Packages
-					</Link>
-					<Link
-						to={`/events/${eventId}/packages/${event_date_id}/plane/${packageId}/group-size`}
-						style={{
-							color: 'white',
-							textDecoration: 'none',
-						}}
-					>
-						Group Size
-					</Link>
-					<Link
-						to={`/events/${eventId}/packages/${event_date_id}/plane/${packageId}/group-size/${groupSize}/accommodation`}
-						style={{
-							color: 'white',
-							textDecoration: 'none',
-						}}
-					>
-						Accommodation
-					</Link>
-					<Link
-						to={`/events/${eventId}/packages/${event_date_id}/plane/${packageId}/group-size/${groupSize}/accommodation/${aId}/rooms`}
-						style={{
-							color: 'white',
-							textDecoration: 'none',
-						}}
-					>
-						Rooms
-					</Link>
-					<Typography color="primary">Add-ons</Typography>
-					<Typography color="white">Review</Typography>
-				</Breadcrumbs>
-
 				{/* Main Content */}
 				<Typography variant="h3" component="h1" gutterBottom>
 					Choose Your Add-ons

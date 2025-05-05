@@ -17,10 +17,9 @@ import api from '../utils/api'
 import { useSelector } from 'react-redux'
 import { toast } from 'react-toastify'
 
-export default function ReviewPackage() {
+export default function ReviewPackage({bookingData,setBookingData,onNext,eventId,event_date_id,packageId}) {
 	const location = useLocation()
-	const { eventId, event_date_id, packageId, groupSize, aId, roomIds } =
-		useParams()
+
 	const [event, setEvent] = useState(null)
 	const [pricingPlan, setPricingPlan] = useState(null)
 	const [accommodation, setAccommodation] = useState(null)
@@ -34,6 +33,7 @@ export default function ReviewPackage() {
 	const [roomQuantities, setRoomQuantities] = useState({})
 	const [error, setError] = useState(null)
 	const [loading, setLoading] = useState(false)
+	const { groupSize, aId, roomIds } = bookingData;
 
 	useEffect(() => {
 		const fetchData = async () => {
@@ -99,8 +99,8 @@ export default function ReviewPackage() {
 		fetchData()
 	}, [eventId, packageId, aId, roomIds, location.state])
 
-	const checkInDate = useSelector((state) => state.booking.dates.checkIn)
-	const checkOutDate = useSelector((state) => state.booking.dates.checkOut)
+	const checkInDate = bookingData.checkInDate
+	const checkOutDate = bookingData.checkOutDate
 
 	const handleCheckout = async () => {
 		try {
@@ -231,50 +231,12 @@ export default function ReviewPackage() {
 
 	return (
 		<Box className="min-h-screen bg-transparent text-white">
-			<Header />
 			<Container maxWidth="xl" sx={{ pt: 12, pb: 8 }}>
 				{error && (
 					<Alert severity="error" sx={{ mb: 4 }}>
 						{error}
 					</Alert>
 				)}
-				{/* Breadcrumb Navigation */}
-				<Breadcrumbs
-					separator={<ChevronRight size={16} color="#FFFFFF80" />}
-					sx={{ mb: 4 }}
-				>
-					<Link
-						to={`/events/${eventId}/packages/${event_date_id}`}
-						style={{ color: 'white', textDecoration: 'none' }}
-					>
-						Packages
-					</Link>
-					<Link
-						to={`/events/${eventId}/packages/${event_date_id}/plane/${packageId}/group-size`}
-						style={{ color: 'white', textDecoration: 'none' }}
-					>
-						Group Size
-					</Link>
-					<Link
-						to={`/events/${eventId}/packages/${event_date_id}/plane/${packageId}/group-size/${groupSize}/accommodation`}
-						style={{ color: 'white', textDecoration: 'none' }}
-					>
-						Accommodation
-					</Link>
-					<Link
-						to={`/events/${eventId}/packages/${event_date_id}/plane/${packageId}/group-size/${groupSize}/accommodation/${aId}/rooms`}
-						style={{ color: 'white', textDecoration: 'none' }}
-					>
-						Rooms
-					</Link>
-					<Link
-						to={`/events/${eventId}/packages/${event_date_id}/plane/${packageId}/group-size/${groupSize}/accommodation/${aId}/rooms/${roomIds}/add-ons`}
-						style={{ color: 'white', textDecoration: 'none' }}
-					>
-						Add-ons
-					</Link>
-					<Typography color="primary">Review</Typography>
-				</Breadcrumbs>
 
 				<Typography variant="h3" component="h1" gutterBottom>
 					Review Package

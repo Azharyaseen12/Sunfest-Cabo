@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate, useParams, useLocation } from 'react-router'
+import { Link, useNavigate } from 'react-router'
 import {
 	Box,
 	Container,
@@ -26,7 +26,7 @@ import api from '../utils/api'
 import { useDispatch, useSelector } from 'react-redux'
 import { setSelectedRooms } from '../store/slices/bookingSlice'
 
-const Carousel = ({ images, alt }) => {
+const Carousel = ({ alt }) => {
 	const [currentIndex, setCurrentIndex] = useState(0)
 	const defaultImage =
 		'https://images.unsplash.com/photo-1615460549969-36fa19521a4f?q=80&w=1974&auto=format&fit=crop'
@@ -50,21 +50,72 @@ const Carousel = ({ images, alt }) => {
 		<Box
 			sx={{
 				position: 'relative',
-				height: 400,
-				overflow: 'hidden',
+				height: 500,
 				borderRadius: 2,
+				width: '100%',
 			}}
 		>
+			<Box sx={{
+				 	height : '100%' ,
+					width: '100%',
+				  	display: 'flex',
+					justifyContent: 'center',
+					alignItems: 'center',
+					gap: 3,
+					}}>
+			<img
+				src={displayImages[currentIndex].image}
+				alt={alt}
+				style={{
+					width: '60%',
+					height: '100%',
+					transition: 'opacity 0.3s ease-in-out',
+					borderRadius: "20px",
+					objectFit: 'cover',
+				}}
+			/>
+			<img
+				src={displayImages[currentIndex].image}
+				alt={alt}
+				style={{
+					width: '25%',
+					height: '100%',
+					transition: 'opacity 0.3s ease-in-out',
+					borderRadius: "20px",
+					objectFit: 'cover',
+				}}
+			/>
+			<Box sx={{ display: 'flex',
+				justifyContent: 'center',
+				alignItems: 'center',
+				gap: 3,
+				height: '100%',
+				flexDirection: 'column',
+				width: '15%',
+				}}>
 			<img
 				src={displayImages[currentIndex].image}
 				alt={alt}
 				style={{
 					width: '100%',
 					height: '100%',
-					objectFit: 'cover',
 					transition: 'opacity 0.3s ease-in-out',
+					borderRadius: "20px",
 				}}
 			/>
+			<img
+				src={displayImages[currentIndex].image}
+				alt={alt}
+				style={{
+					width: '100%',
+					height: '100%',
+					transition: 'opacity 0.3s ease-in-out',
+					borderRadius: "20px",
+				}}
+			/>
+			</Box>
+			</Box>
+			
 			{displayImages.length > 1 && (
 				<>
 					<IconButton
@@ -127,10 +178,8 @@ const Carousel = ({ images, alt }) => {
 	)
 }
 
-export default function RoomSelection() {
+export default function RoomSelection({bookingData, setBookingData , onNext}) {
 	const navigate = useNavigate()
-	const { eventId, event_date_id, packageId, groupSize, aId } = useParams()
-	const location = useLocation()
 	const dispatch = useDispatch()
 	const { selectedRooms } = useSelector((state) => state.booking)
 	const [rooms, setRooms] = useState([])
@@ -139,22 +188,12 @@ export default function RoomSelection() {
 	const [error, setError] = useState(null)
 	const [groupSizeData, setGroupSizeData] = useState(null)
 	const [loading, setLoading] = useState(true)
-	const [checkInDate, setCheckInDate] = useState(null)
-	const [checkOutDate, setCheckOutDate] = useState(null)
-	const [nights, setNights] = useState(0)
-
-	useEffect(() => {
-		// Get dates from location state
-		if (location.state) {
-			setCheckInDate(new Date(location.state.checkInDate))
-			setCheckOutDate(new Date(location.state.checkOutDate))
-			setNights(location.state.nights)
-		}
-	}, [location.state])
+	const checkInDate = new Date(bookingData.checkInDate);
+	const checkOutDate = new Date(bookingData.checkOutDate);
 
 	useEffect(() => {
 		const fetchData = async () => {
-			if (!groupSize || !checkInDate || !checkOutDate) {
+			if (!bookingData.groupSize || !checkInDate || !checkOutDate) {
 				setError('Invalid selection or missing dates')
 				setLoading(false)
 				return
@@ -166,7 +205,7 @@ export default function RoomSelection() {
 
 				// Fetch group size details
 				const groupSizeResponse = await api.get(
-					`events/group-sizes/${groupSize}`
+					`events/group-sizes/${bookingData.groupSize}`
 				)
 				if (!groupSizeResponse.data) {
 					throw new Error('Group size not found')
@@ -175,7 +214,7 @@ export default function RoomSelection() {
 
 				// Fetch rooms with date availability
 				const roomsResponse = await api.get(
-					`events/rooms?accommodation_id=${aId}&check_in=${checkInDate.toISOString()}&check_out=${checkOutDate.toISOString()}`
+					`events/rooms?accommodation_id=${bookingData.aId}&check_in=${checkInDate.toISOString()}&check_out=${checkOutDate.toISOString()}`
 				)
 				setRooms(roomsResponse.data)
 				if (roomsResponse.data.length > 0) {
@@ -194,7 +233,7 @@ export default function RoomSelection() {
 		}
 
 		fetchData()
-	}, [groupSize, aId, checkInDate, checkOutDate])
+	}, [bookingData.groupSize, bookingData.aId, bookingData.checkInDate, bookingData.checkOutDate])
 
 	const canSelectRoom = (room) => {
 		if (!groupSizeData) return false
@@ -286,18 +325,16 @@ export default function RoomSelection() {
 			return acc
 		}, {})
 
-		navigate(
-			`/events/${eventId}/packages/${event_date_id}/plane/${packageId}/group-size/${groupSize}/accommodation/${aId}/rooms/${roomIdsWithQuantities}/add-ons`,
-			{
-				state: {
-					selectedRooms: selectedRooms.map(({ room, quantity }) => ({
-						room,
-						quantity,
-					})),
-					roomQuantities, // Add the quantities map to state
-				},
-			}
-		)
+		setBookingData({
+			...bookingData,
+			selectedRooms: selectedRooms.map(({ room, quantity }) => ({
+				room,
+				quantity,
+			})),
+			roomQuantities,
+			roomIdsWithQuantities,
+		})
+		onNext();
 	}
 
 	if (loading) {
@@ -353,44 +390,8 @@ export default function RoomSelection() {
 
 	return (
 		<Box className="min-h-screen bg-transparent text-white">
-			<Header />
-			<Container maxWidth="xl" sx={{ pt: 12, pb: 8 }}>
-				{/* Breadcrumb Navigation */}
-				<Breadcrumbs
-					separator={<ChevronRight size={16} color="#FFFFFF80" />}
-					sx={{ mb: 4 }}
-				>
-					<Link
-						to={`/events/${eventId}/packages/${event_date_id}`}
-						style={{
-							color: 'white',
-							textDecoration: 'none',
-						}}
-					>
-						Packages
-					</Link>
-					<Link
-						to={`/events/${eventId}/packages/${event_date_id}/plane/${packageId}/group-size`}
-						style={{
-							color: 'white',
-							textDecoration: 'none',
-						}}
-					>
-						Group Size
-					</Link>
-					<Link
-						to={`/events/${eventId}/packages/${event_date_id}/plane/${packageId}/group-size/${groupSize}/accommodation`}
-						style={{
-							color: 'white',
-							textDecoration: 'none',
-						}}
-					>
-						Accommodation
-					</Link>
-					<Typography color="primary">Rooms</Typography>
-					<Typography color="white">Add-ons</Typography>
-					<Typography color="white">Review</Typography>
-				</Breadcrumbs>
+			<Container maxWidth="xl" sx={{ pt: 6, pb: 8 }}>
+
 
 				{/* Hotel Images Carousel */}
 				{hotel && <Carousel images={hotel.images} alt={hotel.title} />}
@@ -413,15 +414,15 @@ export default function RoomSelection() {
 							3325 S Las Vegas Blvd, Las Vegas, NV 89109
 						</Typography>
 						<Typography color="primary" gutterBottom>
-							{checkInDate
-								? new Date(checkInDate).toLocaleDateString('en-GB', {
+							{bookingData.checkInDate
+								? new Date(bookingData.checkInDate).toLocaleDateString('en-GB', {
 										day: 'numeric',
 										month: 'short',
 								  })
 								: ''}{' '}
 							-{' '}
-							{checkOutDate
-								? new Date(checkOutDate).toLocaleDateString('en-GB', {
+							{bookingData.checkOutDate
+								? new Date(bookingData.checkOutDate).toLocaleDateString('en-GB', {
 										day: 'numeric',
 										month: 'short',
 								  })
@@ -528,8 +529,11 @@ export default function RoomSelection() {
 				/>
 
 				{/* Room Options */}
-				<Typography variant="h5" component="h2" gutterBottom>
-					Available Rooms
+				<Typography variant="h4" component="h2" gutterBottom>
+					Room Bundle for 2
+				</Typography>
+				<Typography variant="body1" color="rgba(255, 255, 255, 0.5)" gutterBottom>
+					Best value based on your group size.
 				</Typography>
 
 				<Box
@@ -540,10 +544,11 @@ export default function RoomSelection() {
 							sm: 'repeat(2, 1fr)',
 							md: 'repeat(3, 1fr)',
 						},
-						gap: 3,
+						gap: 4,
 						width: '100%',
 						maxWidth: '100%',
 						pb: 12,
+						mt: 2,
 					}}
 				>
 					{rooms.map((room) => {
@@ -564,6 +569,7 @@ export default function RoomSelection() {
 											boxShadow: isDisabled ? 1 : 6,
 										},
 										bgcolor: 'rgba(255, 255, 255, 0.2)',
+										maxWidth: '450px',
 									}}
 								>
 									<CardContent
@@ -571,11 +577,12 @@ export default function RoomSelection() {
 											flexGrow: 1,
 											display: 'flex',
 											flexDirection: 'column',
+											pb: 5,
 										}}
 									>
 										<Box
 											sx={{
-												height: 190,
+												height: 250,
 												mb: 2,
 												borderRadius: 2,
 												overflow: 'hidden',
@@ -601,6 +608,7 @@ export default function RoomSelection() {
 												alignItems: 'flex-start',
 												mb: 2,
 												color: 'white',
+												px: 2,
 											}}
 										>
 											<Typography variant="h6" component="h3">
@@ -633,8 +641,8 @@ export default function RoomSelection() {
 										</Box>
 										<Typography
 											variant="body2"
-											color="rgba(255, 255, 255, 0.8)"
-											sx={{ mb: 'auto' }}
+											color="rgba(255, 255, 255, 0.5)"
+											sx={{ mb: 'auto'  , px: 2 }}
 										>
 											{room.description}
 										</Typography>
@@ -736,6 +744,9 @@ export default function RoomSelection() {
 															fullWidth
 															onClick={() => handleSelectRoom(room, 1)}
 															disabled={isDisabled}
+															sx={{
+																mt: 2,
+															}}
 														>
 															Select Room
 														</Button>

@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router'
 import {
 	Box,
 	Container,
@@ -12,24 +11,14 @@ import {
 	Stack,
 	Tooltip,
 } from '@mui/material'
-import { ChevronRight } from 'lucide-react'
-import Header from '../components/Header'
 import api from '../utils/api'
 
-export default function GroupSizeSelection() {
-	const navigate = useNavigate()
-	const { eventId, packageId, event_date_id } = useParams()
+export default function GroupSizeSelection({packageId, onNext, setBookingData, bookingData}) {
 	const [selectedSize, setSelectedSize] = useState(null)
 	const [groups, setGroups] = useState([])
 	const [pricingPlan, setPricingPlan] = useState(null)
 
-	const handleNext = () => {
-		if (selectedSize) {
-			navigate(
-				`/events/${eventId}/packages/${event_date_id}/plane/${packageId}/group-size/${selectedSize}/accommodation`
-			)
-		}
-	}
+	console.log("bookingData in GroupSizeSelection", bookingData)
 
 	useEffect(() => {
 		const fetchData = async () => {
@@ -67,32 +56,15 @@ export default function GroupSizeSelection() {
 		if (!pricingPlan) return false
 		return group.number_of_persons <= pricingPlan.available_tickets
 	}
+	const handleNext = () => {
+		onNext()
+		console.log("selectedSize", selectedSize)
+		setBookingData({...bookingData, groupSize: selectedSize})
+	}
 
 	return (
 		<Box className="min-h-screen bg-transparent text-white">
-			<Header />
-			<Container maxWidth="lg" sx={{ pt: 12, pb: 8 }}>
-				{/* Breadcrumb Navigation */}
-				<Breadcrumbs
-					separator={<ChevronRight size={16} color="#FFFFFFA8" />}
-					sx={{ mb: 4 }}
-				>
-					<Link
-						to={`/events/${eventId}/packages`}
-						style={{
-							color: 'white',
-							textDecoration: 'none',
-						}}
-					>
-						Packages
-					</Link>
-					<Typography color="#F821DB">Group Size</Typography>
-					<Typography color="white">Accommodation</Typography>
-					<Typography color="white">Rooms</Typography>
-					<Typography color="white">Add-ons</Typography>
-					<Typography color="white">Review</Typography>
-				</Breadcrumbs>
-
+			<Container maxWidth="lg" sx={{ pt: 6, pb: 8 }}>
 				{/* Main Content */}
 				<Box sx={{ maxWidth: 500, mx: 'auto' }}>
 					<Typography variant="h3" component="h1" gutterBottom align="left">
@@ -143,7 +115,21 @@ export default function GroupSizeSelection() {
 											<span>
 												<FormControlLabel
 													value={group.id}
-													control={<Radio />}
+													control={
+														<Radio
+														  sx={{
+															'& .MuiSvgIcon-root': {
+															  backgroundColor: 'white',
+															  borderRadius: '50%',
+															  border: '2px solid #D2691E',
+															},
+															'&.Mui-checked .MuiSvgIcon-root': {
+															  borderColor: 'primary.main',
+															},
+														  }}
+														/>
+													  }
+													  
 													label={
 														<Box
 															sx={{
