@@ -64,7 +64,7 @@ class TicketInventoryAdmin(admin.ModelAdmin):
     )
     search_fields = ("ticket_type__ticket_name",)
     list_filter = ("ticket_type", "event_day")
-    readonly_fields = ("remaining_inventory",)
+    # readonly_fields = ("remaining_inventory",)
     list_select_related = ("ticket_type", "event_day")
     ordering = ("ticket_type__ticket_name", "event_day__event_date")
 
