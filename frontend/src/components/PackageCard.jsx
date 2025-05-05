@@ -14,8 +14,9 @@ import {
 import { CircleCheck } from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate } from 'react-router'
+import Logo from '../assets/images/SunsetFestLogo.svg'
   
-export default function PackageCard({ pkg, eventId, event_date_id, onNext = false , setBookingData , bookingData}) {
+export default function PackageCard({ pkg, onNext = false , setBookingData , bookingData}) {
 const navigate = useNavigate()
 const [showAll, setShowAll] = useState(false)
 
@@ -39,7 +40,7 @@ const handleButtonClick = () => {
       onNext();
     } else {
       console.log('PackageCard: Falling back to navigation');
-      navigate(`/events/${eventId}/packages/${event_date_id}/plane/${pkg.id}/booking/packages`);
+    //   navigate(`/events/${eventId}/packages/${event_date_id}/plane/${pkg.id}/booking/packages`);
     }
   };
 
@@ -84,25 +85,61 @@ return (
         >
         {/* Package Image */}
         <Box
-            sx={{
-            height: 190,
-            mb: 2,
+        sx={{
+            background : "rgba(255,255,255,0.1)",
             borderRadius: 2,
+            display : "flex",
+            alignItems:"center",
+            pt:1,
+            px:1,
+            gap:1,
+            mb:2,
+            height:190
+        }}>
+        <Box
+            sx={{
+            mb: 2,
             overflow: 'hidden',
             '& img': {
                 width: '100%',
                 height: '100%',
-                objectFit: 'cover',
+                objectFit: 'contain',
             },
+            width : "50%"
             }}
         >
             <img
-            src={
-                pkg.banner_image ??
-                'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4'
-            }
+            src={Logo}
             alt={pkg.title}
             />
+        </Box>
+        <Box sx={{
+            display : "flex",
+            flexDirection : "column",
+            gap : 1
+        }} >
+            <Typography
+              variant="h6"
+              sx={{
+                fontWeight: 'bold',
+                background:
+                  'linear-gradient(to right,#F821DB,#B549D8,#8D7BB1, #5526FF)',
+                backgroundClip: 'text',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+              }}
+            >
+              SUNSET FEST CABO
+            </Typography>
+            <Typography variant='body2' fontSize="12px" sx={{
+                color : "rgba(255,255,255,0.7)"
+            }}> 
+            OCTOBER 24th - 26th, 2025
+            </Typography>
+            <Typography variant='body1' fontSize="18px" fontWeight="bold">
+                {pkg?.package_name}
+            </Typography>
+        </Box>
         </Box>
 
         {/* Package Details */}
@@ -117,16 +154,27 @@ return (
             {pkg.title}
         </Typography>
         <Typography
+            variant="body1"
+            sx={{
+            textAlign: 'center',
+            mb:0.5
+            }}
+        >
+            {pkg.description}
+        </Typography>
+
+        <Typography
             variant="subtitle2"
             sx={{
             mb: 4,
             mt: 0,
-            fontWeight: 'light',
             textAlign: 'center',
-            color: '#FFFFFFA8',
+            color:"rgba(255,255,255,0.8)",
             }}
+            fontWeight="10px"
+
         >
-            {pkg.description}
+           Hotel only package, concert ticket not included
         </Typography>
 
         {/* Price Display */}

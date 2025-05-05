@@ -14,34 +14,34 @@ import Header from '../components/Header'
 import { useEffect, useState } from 'react'
 import api from '../utils/api'
 import PackageCard from '../components/PackageCard' // Import the PackageCard component
+import Logo from '../assets/images/SunsetFestLogo.svg'
 
 export default function EventDetails() {
-  const [event, setEvent] = useState(null)
+  const [packages,setPackages] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const navigate = useNavigate()
   const { eventId } = useParams()
 
   useEffect(() => {
-    const fetchEvent = async () => {
+    const fetchPackages = async () => {
       try {
-        setLoading(true)
-        const response = await api.get(`events/events/${eventId}`)
-        setEvent(response.data)
-        setError(null)
+        setLoading(true);
+        const response = await api.get(`event/packages/`);
+        console.log(response.data)
+        setPackages(response.data); 
+        setError(null);
       } catch (error) {
-        console.error('Error fetching event:', error)
-        setError('Failed to load event details. Please try again later.')
+        console.error('Error fetching packages:', error);
+        setError('Failed to load packages. Please try again later.');
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    if (eventId) {
-      fetchEvent()
-    }
-  }, [eventId])
-
+    fetchPackages();  
+  }, []); 
+  
   if (loading) {
     return (
       <Box className="min-h-screen bg-gray-50">
@@ -78,9 +78,6 @@ export default function EventDetails() {
     )
   }
 
-  if (!event) {
-    return null
-  }
 
   // Function to check if a package is sold out
   const isPackageSoldOut = (pkg) => {
@@ -116,8 +113,7 @@ export default function EventDetails() {
           >
             <img
               className="w-[500px] h-[500px]"
-              src={'/hero.png'}
-              alt={event.title}
+              src={Logo}
             />
           </Box>
 
@@ -142,10 +138,13 @@ export default function EventDetails() {
                 mb: 3,
               }}
             >
-              {event.title}
+              Escape to <span style={{
+                color : "#F821DB"
+              }}>Cabo</span> for the Live Music Getaway
             </Typography>
             <Typography variant="body1" sx={{ mb: 4, color: 'white' }}>
-              {event.description}
+            Join us for an unforgettable experience in Cabo San Lucas — featuring world-class performances,
+             luxury accommodations, and thrilling excursions. Book your all-in-one package now.
             </Typography>
             <Typography
               variant="h4"
@@ -184,15 +183,11 @@ export default function EventDetails() {
               gap: 4,
             }}
           >
-            {event.dates?.flatMap((date) =>
-              date.pricing_plans?.map((pkg) => (
+            {packages?.flatMap((pkg) =>
                 <PackageCard
-                  key={`${date.id}-${pkg.id}`}
+                  key={pkg.id}
                   pkg={pkg}
-                  eventId={eventId}
-                  event_date_id={date.id}
                 />
-              ))
             )}
           </Box>
         </Container>
