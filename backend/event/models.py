@@ -9,6 +9,9 @@ class Package(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     package_name = models.CharField(max_length=100, unique=True)
     description = models.TextField(blank=True, null=True)
+    starting_price = models.DecimalField(max_digits=10, decimal_places=2, default=4000)
+    is_hotel_required = models.BooleanField(default=False)
+
     is_active = models.BooleanField(default=True)
 
     class Meta:
