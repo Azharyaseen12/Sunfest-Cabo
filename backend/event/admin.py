@@ -36,7 +36,6 @@ class TicketTypeAdmin(admin.ModelAdmin):
     )
     search_fields = ("ticket_name", "description")
     list_filter = ("package",)
-    readonly_fields = ("remaining_inventory",)
     list_select_related = ("package",)
     ordering = ("package__package_name", "ticket_name")
 
@@ -64,7 +63,6 @@ class TicketInventoryAdmin(admin.ModelAdmin):
     )
     search_fields = ("ticket_type__ticket_name",)
     list_filter = ("ticket_type", "event_day")
-    # readonly_fields = ("remaining_inventory",)
     list_select_related = ("ticket_type", "event_day")
     ordering = ("ticket_type__ticket_name", "event_day__event_date")
 
@@ -81,9 +79,8 @@ class TicketInventoryAdmin(admin.ModelAdmin):
 
 @admin.register(Hotel)
 class HotelAdmin(admin.ModelAdmin):
-    list_display = ("hotel_name", "is_premium", "address")
+    list_display = ("hotel_name", "address")
     search_fields = ("hotel_name", "address", "description")
-    list_filter = ("is_premium",)
     ordering = ("hotel_name",)
 
 
@@ -97,24 +94,17 @@ class RoomTypeAdmin(admin.ModelAdmin):
 @admin.register(RoomInventory)
 class RoomInventoryAdmin(admin.ModelAdmin):
     list_display = (
-        "hotel_name",
         "room_type_name",
         "stay_date",
         "total_rooms",
         "remaining_rooms",
         "price_per_night",
     )
-    search_fields = ("hotel__hotel_name", "room_type__room_type_name")
-    list_filter = ("hotel", "room_type", "stay_date")
-    readonly_fields = ("remaining_rooms",)
-    list_select_related = ("hotel", "room_type")
-    ordering = ("hotel__hotel_name", "room_type__room_type_name", "stay_date")
+    search_fields = ("room_type__room_type_name",)
+    list_filter = ("room_type", "stay_date")
+    list_select_related = ("room_type",)
+    ordering = ("room_type__room_type_name", "stay_date")
     date_hierarchy = "stay_date"
-
-    def hotel_name(self, obj):
-        return obj.hotel.hotel_name
-
-    hotel_name.short_description = "Hotel"
 
     def room_type_name(self, obj):
         return obj.room_type.room_type_name
@@ -150,8 +140,8 @@ class BookingRoomInline(admin.TabularInline):
     model = BookingRoom
     extra = 1
     readonly_fields = ("quantity",)
-    fields = ("hotel", "room_type", "stay_date", "quantity")
-    autocomplete_fields = ("hotel", "room_type")
+    fields = ("room_type", "stay_date", "quantity")
+    autocomplete_fields = ("room_type",)
 
 
 class BookingAddOnInline(admin.TabularInline):
@@ -224,15 +214,14 @@ class BookingTicketAdmin(admin.ModelAdmin):
 class BookingRoomAdmin(admin.ModelAdmin):
     list_display = (
         "booking_id",
-        "hotel_name",
         "room_type_name",
         "stay_date",
         "quantity",
     )
-    search_fields = ("booking__id", "hotel__hotel_name", "room_type__room_type_name")
-    list_filter = ("hotel", "room_type", "stay_date")
+    search_fields = ("booking__id", "room_type__room_type_name")
+    list_filter = ("room_type", "stay_date")
     readonly_fields = ("quantity",)
-    list_select_related = ("booking", "hotel", "room_type")
+    list_select_related = ("booking", "room_type")
     ordering = ("booking__id", "stay_date")
     date_hierarchy = "stay_date"
 
@@ -240,11 +229,6 @@ class BookingRoomAdmin(admin.ModelAdmin):
         return obj.booking.id
 
     booking_id.short_description = "Booking ID"
-
-    def hotel_name(self, obj):
-        return obj.hotel.hotel_name
-
-    hotel_name.short_description = "Hotel"
 
     def room_type_name(self, obj):
         return obj.room_type.room_type_name
