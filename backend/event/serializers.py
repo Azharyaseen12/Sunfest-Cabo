@@ -5,6 +5,7 @@ from event.models import (
     TicketType,
     EventDay,
     TicketInventory,
+    AfterParty,
     Hotel,
     RoomType,
     RoomInventory,
@@ -14,6 +15,7 @@ from event.models import (
     BookingRoom,
     BookingAddOn,
     PackageFeature,
+    BookingAfterParty,
 )
 
 
@@ -73,6 +75,20 @@ class TicketInventorySerializer(serializers.ModelSerializer):
             "event_day",
             "total_inventory",
             "remaining_inventory",
+        ]
+
+
+class AfterPartySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AfterParty
+        fields = [
+            "id",
+            "after_party_type",
+            "event_date",
+            "location",
+            "price_per_person",
+            "total_capacity",
+            "remaining_capacity",
         ]
 
 
@@ -144,10 +160,19 @@ class BookingAddOnSerializer(serializers.ModelSerializer):
         fields = ["add_on", "quantity"]
 
 
+class BookingAfterPartySerializer(serializers.ModelSerializer):
+    after_party = serializers.PrimaryKeyRelatedField(queryset=AfterParty.objects.all())
+
+    class Meta:
+        model = BookingAfterParty
+        fields = ["after_party", "quantity"]
+
+
 class BookingSerializer(serializers.ModelSerializer):
     booking_tickets = BookingTicketSerializer(many=True)
     booking_rooms = BookingRoomSerializer(many=True, required=False)
     booking_add_ons = BookingAddOnSerializer(many=True, required=False)
+    booking_after_parties = BookingAfterPartySerializer(many=True, required=False)
     package = serializers.PrimaryKeyRelatedField(queryset=Package.objects.all())
     ticket_type = serializers.PrimaryKeyRelatedField(queryset=TicketType.objects.all())
 
@@ -166,6 +191,7 @@ class BookingSerializer(serializers.ModelSerializer):
             "booking_tickets",
             "booking_rooms",
             "booking_add_ons",
+            "booking_after_parties",
         ]
 
     def validate(self, data):
@@ -212,27 +238,41 @@ class BookingSerializer(serializers.ModelSerializer):
                     f"Insufficient inventory for {add_on_obj.add_on_name}."
                 )
 
+        for after_party in data.get("booking_after_parties", []):  # NEW
+            after_party_obj = after_party["after_party"]
+            if after_party_obj.remaining_capacity < after_party["quantity"]:
+                raise serializers.ValidationError(
+                    f"Insufficient capacity for {after_party_obj.after_party_type} on {after_party_obj.event_date} at {after_party_obj.location}."
+                )
+
         return data
 
     def create(self, validated_data):
         booking_tickets_data = validated_data.pop("booking_tickets")
         booking_rooms_data = validated_data.pop("booking_rooms", [])
         booking_add_ons_data = validated_data.pop("booking_add_ons", [])
+        booking_after_parties_data = validated_data.pop("booking_after_parties", [])
 
         # Calculate total_amount (simplified, assumes price from ticket_type and add-ons)
         total_amount = 0
         for ticket in booking_tickets_data:
             ticket_type = TicketType.objects.get(id=ticket["ticket_type"].id)
             total_amount += ticket_type.price * ticket["quantity"]
+
         for room in booking_rooms_data:
             inventory = RoomInventory.objects.get(
                 room_type=room["room_type"],
                 stay_date=room["stay_date"],
             )
             total_amount += inventory.price_per_night * room["quantity"]
+
         for add_on in booking_add_ons_data:
             add_on_obj = AddOn.objects.get(id=add_on["add_on"].id)
             total_amount += (add_on_obj.price_per_person or 0) * add_on["quantity"]
+
+        for after_party in booking_after_parties_data:
+            after_party_obj = AfterParty.objects.get(id=after_party["after_party"].id)
+            total_amount += after_party_obj.price_per_person * after_party["quantity"]
 
         validated_data["total_amount"] = total_amount
         booking = Booking.objects.create(**validated_data)
@@ -244,5 +284,7 @@ class BookingSerializer(serializers.ModelSerializer):
             BookingRoom.objects.create(booking=booking, **room_data)
         for add_on_data in booking_add_ons_data:
             BookingAddOn.objects.create(booking=booking, **add_on_data)
+        for after_party_data in booking_after_parties_data:
+            BookingAfterParty.objects.create(booking=booking, **after_party_data)
 
         return booking

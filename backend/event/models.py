@@ -134,6 +134,43 @@ class TicketInventory(models.Model):
         return f"{self.ticket_type.ticket_name} - {self.event_day.day_name if self.event_day else 'Multi-Day'}"
 
 
+# After Party Model
+class AfterParty(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    after_party_type = models.CharField(
+        max_length=10,
+        choices=[("GA", "General Admission"), ("VIP", "VIP")],
+        default="GA",
+    )
+    event_date = models.DateField()
+    location = models.CharField(max_length=100)
+    price_per_person = models.DecimalField(max_digits=10, decimal_places=2)
+    total_capacity = models.PositiveIntegerField()
+    remaining_capacity = models.PositiveIntegerField()
+
+    class Meta:
+        db_table = "after_parties"
+        verbose_name = "After Party"
+        verbose_name_plural = "After Parties"
+        unique_together = [["after_party_type", "event_date", "location"]]
+        constraints = [
+            CheckConstraint(
+                check=Q(remaining_capacity__lte=models.F("total_capacity")),
+                name="after_party_remaining_capacity_lte_total",
+            ),
+            CheckConstraint(
+                check=Q(remaining_capacity__gte=0),
+                name="after_party_remaining_capacity_gte_zero",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["event_date", "after_party_type"]),
+        ]
+
+    def __str__(self):
+        return f"{self.after_party_type} - {self.location} - {self.event_date}"
+
+
 # Hotel model
 class Hotel(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -242,6 +279,13 @@ class Booking(models.Model):
     )
     ticket_type = models.ForeignKey(
         TicketType, on_delete=models.CASCADE, related_name="bookings"
+    )
+    after_party = models.ForeignKey(
+        AfterParty,
+        on_delete=models.CASCADE,
+        related_name="bookings",
+        null=True,
+        blank=True,
     )
     party_size = models.PositiveIntegerField(validators=[MinValueValidator(1)])
     booking_date = models.DateTimeField(auto_now_add=True)
@@ -373,4 +417,32 @@ class BookingAddOn(models.Model):
         if self.add_on.total_inventory is not None:
             self.add_on.remaining_inventory -= self.quantity
             self.add_on.save()
+        super().save(*args, **kwargs)
+
+
+# NEW: BookingAfterParty model
+class BookingAfterParty(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    booking = models.ForeignKey(
+        Booking, on_delete=models.CASCADE, related_name="booking_after_parties"
+    )
+    after_party = models.ForeignKey(
+        AfterParty, on_delete=models.CASCADE, related_name="booking_after_parties"
+    )
+    quantity = models.PositiveIntegerField(validators=[MinValueValidator(1)])
+
+    class Meta:
+        db_table = "booking_after_parties"
+        verbose_name = "Booking After Party"
+        verbose_name_plural = "Booking After Parties"
+        indexes = [
+            models.Index(fields=["booking"]),
+        ]
+
+    def __str__(self):
+        return f"Booking {self.booking.id} - {self.after_party.after_party_type} - {self.after_party.event_date}"
+
+    def save(self, *args, **kwargs):
+        self.after_party.remaining_capacity -= self.quantity
+        self.after_party.save()
         super().save(*args, **kwargs)

@@ -12,6 +12,8 @@ from event.models import (
     RoomInventory,
     AddOn,
     Booking,
+    AfterParty,
+    BookingAfterParty,
 )
 from event.serializers import (
     PackageSerializer,
@@ -23,6 +25,8 @@ from event.serializers import (
     RoomInventorySerializer,
     AddOnSerializer,
     BookingSerializer,
+    BookingAfterPartySerializer,
+    AfterPartySerializer,
 )
 
 
@@ -50,6 +54,13 @@ class TicketInventoryViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = TicketInventorySerializer
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ["ticket_type", "event_day"]
+
+
+class AfterPartyViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = AfterParty.objects.all()
+    serializer_class = AfterPartySerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ["after_party_type", "event_date"]
 
 
 class HotelViewSet(viewsets.ReadOnlyModelViewSet):

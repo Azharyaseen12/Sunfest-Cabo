@@ -14,6 +14,8 @@ from .models import (
     BookingRoom,
     BookingAddOn,
     PackageFeature,
+    BookingAfterParty,
+    AfterParty,
 )
 
 
@@ -75,6 +77,24 @@ class TicketInventoryAdmin(admin.ModelAdmin):
         return obj.event_day.day_name if obj.event_day else "Multi-Day"
 
     event_day_name.short_description = "Event Day"
+
+
+# NEW: AfterPartyAdmin
+@admin.register(AfterParty)
+class AfterPartyAdmin(admin.ModelAdmin):
+    list_display = (
+        "after_party_type",
+        "event_date",
+        "location",
+        "price_per_person",
+        "total_capacity",
+        "remaining_capacity",
+    )
+    search_fields = ("after_party_type", "location")
+    list_filter = ("after_party_type", "event_date")
+    readonly_fields = ("remaining_capacity",)
+    ordering = ("event_date", "after_party_type")
+    date_hierarchy = "event_date"
 
 
 @admin.register(Hotel)
@@ -152,6 +172,15 @@ class BookingAddOnInline(admin.TabularInline):
     autocomplete_fields = ("add_on",)
 
 
+# NEW: BookingAfterPartyInline
+class BookingAfterPartyInline(admin.TabularInline):
+    model = BookingAfterParty
+    extra = 1
+    readonly_fields = ("quantity",)
+    fields = ("after_party", "quantity")
+    autocomplete_fields = ("after_party",)
+
+
 @admin.register(Booking)
 class BookingAdmin(admin.ModelAdmin):
     list_display = (
@@ -171,7 +200,12 @@ class BookingAdmin(admin.ModelAdmin):
     list_select_related = ("package", "ticket_type")
     ordering = ("-booking_date",)
     date_hierarchy = "booking_date"
-    inlines = [BookingTicketInline, BookingRoomInline, BookingAddOnInline]
+    inlines = [
+        BookingTicketInline,
+        BookingRoomInline,
+        BookingAddOnInline,
+        BookingAfterPartyInline,
+    ]
 
     def package_name(self, obj):
         return obj.package.package_name
@@ -261,3 +295,44 @@ class PackageFeatureAdmin(admin.ModelAdmin):
     list_display = ("package__package_name", "feature_text")
     search_fields = ("package__package_name", "feature_text")
     list_filter = ("package",)
+
+
+# NEW: BookingAfterPartyAdmin
+@admin.register(BookingAfterParty)
+class BookingAfterPartyAdmin(admin.ModelAdmin):
+    list_display = (
+        "booking_id",
+        "after_party_type",
+        "after_party_date",
+        "after_party_location",
+        "quantity",
+    )
+    search_fields = (
+        "booking__id",
+        "after_party__after_party_type",
+        "after_party__location",
+    )
+    list_filter = ("after_party__after_party_type", "after_party__event_date")
+    readonly_fields = ("quantity",)
+    list_select_related = ("booking", "after_party")
+    ordering = ("booking__id",)
+
+    def booking_id(self, obj):
+        return obj.booking.id
+
+    booking_id.short_description = "Booking ID"
+
+    def after_party_type(self, obj):
+        return obj.after_party.after_party_type
+
+    after_party_type.short_description = "After Party Type"
+
+    def after_party_date(self, obj):
+        return obj.after_party.event_date
+
+    after_party_date.short_description = "Event Date"
+
+    def after_party_location(self, obj):
+        return obj.after_party.location
+
+    after_party_location.short_description = "Location"
