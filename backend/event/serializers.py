@@ -79,7 +79,7 @@ class TicketInventorySerializer(serializers.ModelSerializer):
 class HotelSerializer(serializers.ModelSerializer):
     class Meta:
         model = Hotel
-        fields = ["id", "hotel_name", "address", "is_premium", "description"]
+        fields = ["id", "hotel_name", "address", "rating", "description"]
 
 
 class RoomTypeSerializer(serializers.ModelSerializer):
@@ -89,14 +89,12 @@ class RoomTypeSerializer(serializers.ModelSerializer):
 
 
 class RoomInventorySerializer(serializers.ModelSerializer):
-    hotel = HotelSerializer(read_only=True)
     room_type = RoomTypeSerializer(read_only=True)
 
     class Meta:
         model = RoomInventory
         fields = [
             "id",
-            "hotel",
             "room_type",
             "stay_date",
             "total_rooms",
@@ -131,12 +129,11 @@ class BookingTicketSerializer(serializers.ModelSerializer):
 
 
 class BookingRoomSerializer(serializers.ModelSerializer):
-    hotel = serializers.PrimaryKeyRelatedField(queryset=Hotel.objects.all())
     room_type = serializers.PrimaryKeyRelatedField(queryset=RoomType.objects.all())
 
     class Meta:
         model = BookingRoom
-        fields = ["hotel", "room_type", "stay_date", "quantity"]
+        fields = ["room_type", "stay_date", "quantity"]
 
 
 class BookingAddOnSerializer(serializers.ModelSerializer):
@@ -197,7 +194,6 @@ class BookingSerializer(serializers.ModelSerializer):
 
         for room in data.get("booking_rooms", []):
             inventory = RoomInventory.objects.get(
-                hotel=room["hotel"],
                 room_type=room["room_type"],
                 stay_date=room["stay_date"],
             )
@@ -230,7 +226,6 @@ class BookingSerializer(serializers.ModelSerializer):
             total_amount += ticket_type.price * ticket["quantity"]
         for room in booking_rooms_data:
             inventory = RoomInventory.objects.get(
-                hotel=room["hotel"],
                 room_type=room["room_type"],
                 stay_date=room["stay_date"],
             )

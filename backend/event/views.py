@@ -55,8 +55,6 @@ class TicketInventoryViewSet(viewsets.ReadOnlyModelViewSet):
 class HotelViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Hotel.objects.all()
     serializer_class = HotelSerializer
-    filter_backends = [DjangoFilterBackend]
-    filterset_fields = ["is_premium"]
 
 
 class RoomTypeViewSet(viewsets.ReadOnlyModelViewSet):
@@ -68,7 +66,7 @@ class RoomInventoryViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = RoomInventory.objects.all()
     serializer_class = RoomInventorySerializer
     filter_backends = [DjangoFilterBackend]
-    filterset_fields = ["hotel", "room_type", "stay_date"]
+    filterset_fields = ["room_type", "stay_date"]
 
 
 class AddOnViewSet(viewsets.ReadOnlyModelViewSet):

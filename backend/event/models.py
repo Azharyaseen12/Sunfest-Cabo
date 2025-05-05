@@ -139,7 +139,7 @@ class Hotel(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     hotel_name = models.CharField(max_length=100)
     address = models.CharField(max_length=255, blank=True, null=True)
-    is_premium = models.BooleanField(default=False)
+    rating = models.DecimalField(max_digits=3, decimal_places=1, default=5)
     description = models.TextField(blank=True, null=True)
 
     class Meta:
@@ -170,9 +170,6 @@ class RoomType(models.Model):
 # RoomInventory model
 class RoomInventory(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    hotel = models.ForeignKey(
-        Hotel, on_delete=models.CASCADE, related_name="room_inventories"
-    )
     room_type = models.ForeignKey(
         RoomType, on_delete=models.CASCADE, related_name="room_inventories"
     )
@@ -185,7 +182,7 @@ class RoomInventory(models.Model):
         db_table = "room_inventory"
         verbose_name = "Room Inventory"
         verbose_name_plural = "Room Inventories"
-        unique_together = [["hotel", "room_type", "stay_date"]]
+        unique_together = [["room_type", "stay_date"]]
         constraints = [
             CheckConstraint(
                 check=Q(remaining_rooms__lte=F("total_rooms")),
@@ -197,11 +194,11 @@ class RoomInventory(models.Model):
             ),
         ]
         indexes = [
-            models.Index(fields=["hotel", "stay_date"]),
+            models.Index(fields=["stay_date"]),
         ]
 
     def __str__(self):
-        return f"{self.hotel.hotel_name} - {self.room_type.room_type_name} - {self.stay_date}"
+        return f"{self.room_type.room_type_name} - {self.stay_date}"
 
 
 # AddOn model
@@ -322,9 +319,6 @@ class BookingRoom(models.Model):
     booking = models.ForeignKey(
         Booking, on_delete=models.CASCADE, related_name="booking_rooms"
     )
-    hotel = models.ForeignKey(
-        Hotel, on_delete=models.CASCADE, related_name="booking_rooms"
-    )
     room_type = models.ForeignKey(
         RoomType, on_delete=models.CASCADE, related_name="booking_rooms"
     )
@@ -340,12 +334,12 @@ class BookingRoom(models.Model):
         ]
 
     def __str__(self):
-        return f"Booking {self.booking.id} - {self.hotel.hotel_name} - {self.stay_date}"
+        return f"Booking {self.booking.id} - {self.room_type.room_type_name} - {self.stay_date}"
 
     def save(self, *args, **kwargs):
         # Update room inventory
         inventory = RoomInventory.objects.get(
-            hotel=self.hotel, room_type=self.room_type, stay_date=self.stay_date
+            room_type=self.room_type, stay_date=self.stay_date
         )
         inventory.remaining_rooms -= self.quantity
         inventory.save()
