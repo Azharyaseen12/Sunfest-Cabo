@@ -21,13 +21,23 @@ export default function SelectYourTicketType({eventId, event_date_id, packageId,
 	const [selectedSize, setSelectedSize] = useState(null)
 	const [groups, setGroups] = useState([])
 	const [pricingPlan, setPricingPlan] = useState(null)
-
+	const [selectedDate, setSelectedDate] = useState(null)
 	const handleNext = () => {
 		if (selectedSize) {
 			navigate(
 				`/events/${eventId}/packages/${event_date_id}/plane/${packageId}/group-size/`
 			)
 		}
+	}
+
+	const availableDates = [
+		{ id: 1, date: '15'},
+		{ id: 2, date: '22'},
+		{ id: 3, date: '29'}
+	]
+
+	const handleDateSelect = (date) => {
+		setSelectedDate(date)
 	}
 
 	useEffect(() => {
@@ -102,12 +112,48 @@ export default function SelectYourTicketType({eventId, event_date_id, packageId,
                                 <Typography variant="h5" component="h2" gutterBottom>From $762.50 USD</Typography>
                                 <Typography variant="body1" color="rgba(255, 255, 255, 0.5)" gutterBottom>/ person</Typography>
                             </Box>
-                            <Typography variant="body1" color="rgba(255, 255, 255, 0.5)" gutterBottom>
+                            {/* <Typography variant="body1" color="rgba(255, 255, 255, 0.5)" gutterBottom>
                             $1,456 USD Total
                             </Typography>
                             <Typography variant="body1" color="rgba(255, 255, 255, 0.5)" gutterBottom>
                             (Taxes and Fees Included)
                             </Typography>
+							 */}
+							{/* Date Selector */}
+							<Box sx={{ mb: 4 }}>
+								<Typography variant="body1" fontSize={18} sx={{ mb: 2 }}>Select Date</Typography>
+								<Box sx={{ 
+								display: 'flex', 
+								justifyContent: 'center', 
+								gap: 3,
+								flexWrap: 'wrap'
+								}}>
+								{availableDates.map((date) => (
+									<Box 
+									key={date.id}
+									onClick={() => handleDateSelect(date.id)}
+									sx={{
+										width: 40,
+										height: 40,
+										borderRadius: '50%',
+										bgcolor: 'rgba(255, 255, 255, 0.1)',
+										display: 'flex',
+										flexDirection: 'column',
+										justifyContent: 'center',
+										alignItems: 'center',
+										cursor: 'pointer',
+										border: selectedDate === date.id ? '1px solid #F821DB' : 'none',
+										color: selectedDate === date.id ? '#F821DB' : 'white',
+										'&:hover': {
+										border: '1px solid #F821DB'
+										}
+									}}
+									>
+									<Typography variant="body1" color={`${selectedDate === date.id ? '#F821DB' : 'white'}`} fontWeight="bold">{date.date}</Typography>
+									</Box>
+								))}
+								</Box>
+							</Box>
                             <Button variant="contained" color="primary" fullWidth sx={{ mt: 2
                              }} onClick={() => onNext()}>
                                 Select
@@ -126,12 +172,48 @@ export default function SelectYourTicketType({eventId, event_date_id, packageId,
                                 <Typography variant="h5" component="h2" gutterBottom>From $762.50 USD</Typography>
                                 <Typography variant="body1" color="rgba(255, 255, 255, 0.5)" gutterBottom>/ person</Typography>
                             </Box>
-                            <Typography variant="body1" color="rgba(255, 255, 255, 0.5)" gutterBottom>
+                            {/* <Typography variant="body1" color="rgba(255, 255, 255, 0.5)" gutterBottom>
                             $1,456 USD Total
                             </Typography>
                             <Typography variant="body1" color="rgba(255, 255, 255, 0.5)" gutterBottom>
                             (Taxes and Fees Included)
-                            </Typography>
+                            </Typography> */}
+							
+							{/* Date Selector */}
+							<Box sx={{ mb: 4 }}>
+								<Typography variant="body1" fontSize={18} sx={{ mb: 2 }}>Select Date</Typography>
+								<Box sx={{ 
+								display: 'flex', 
+								justifyContent: 'center', 
+								gap: 3,
+								flexWrap: 'wrap'
+								}}>
+								{availableDates.map((date) => (
+									<Box 
+									key={date.id}
+									onClick={() => handleDateSelect(date.id)}
+									sx={{
+										width: 40,
+										height: 40,
+										borderRadius: '50%',
+										bgcolor: 'rgba(255, 255, 255, 0.1)',
+										display: 'flex',
+										flexDirection: 'column',
+										justifyContent: 'center',
+										alignItems: 'center',
+										cursor: 'pointer',
+										border: selectedDate === date.id ? '1px solid #F821DB' : 'none',
+										color: selectedDate === date.id ? '#F821DB' : 'white',
+										'&:hover': {
+										border: '1px solid #F821DB'
+										}
+									}}
+									>
+									<Typography variant="body1" color={`${selectedDate === date.id ? '#F821DB' : 'white'}`} fontWeight="bold">{date.date}</Typography>
+									</Box>
+								))}
+								</Box>
+							</Box>
                             <Button variant="contained" color="primary" fullWidth sx={{ mt: 2
                              }} onClick={() => onNext()}>
                                 Select

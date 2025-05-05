@@ -12,6 +12,7 @@ import RoomSelection from './RoomSelection';
 import AddOnSelection from './AddOnSelection';
 import ReviewPackage from './ReviewPackage';
 import Header from '../components/Header';
+import AfterPartySelection from './AfterPartySelection';
 
 const BookingStepper = () => {
   const navigate = useNavigate();
@@ -99,6 +100,19 @@ const BookingStepper = () => {
         setBookingData={setBookingData}
       />, 
       title: 'Add-ons' 
+    },
+    { 
+      path: 'after-party', 
+      component: <AfterPartySelection 
+        packageId={packageId} 
+        eventId={eventId} 
+        event_date_id={event_date_id}
+        onNext={() => navigateToStep(7)}
+        onBack={() => navigateToStep(5)}
+        bookingData={bookingData}
+        setBookingData={setBookingData}
+      />,
+      title: 'After Party'
     },
     { 
       path: 'review', 

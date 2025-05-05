@@ -160,9 +160,9 @@ export default function AddOnSelection({eventId, event_date_id,bookingData,setBo
 
 	return (
 		<Box className="min-h-screen bg-transparent text-white">
-			<Container maxWidth="xl" sx={{ pt: 12, pb: 8 }}>
+			<Container maxWidth="xl" sx={{ pt: 6, pb: 8 }}>
 				{/* Main Content */}
-				<Typography variant="h3" component="h1" gutterBottom>
+				<Typography variant="h4" component="h3" gutterBottom>
 					Choose Your Add-ons
 				</Typography>
 
@@ -203,6 +203,9 @@ export default function AddOnSelection({eventId, event_date_id,bookingData,setBo
 									'&:hover': {
 										boxShadow: 6,
 									},
+									px: 1.5,
+									py: 1,
+									borderRadius: 2,
 								}}
 							>
 								<CardMedia
@@ -211,7 +214,9 @@ export default function AddOnSelection({eventId, event_date_id,bookingData,setBo
 									alt={addon.title}
 									sx={{
 										height: 240,
-										objectFit: 'cover',
+										objectFit: 'contain',
+										backgroundColor: 'rgba(255, 255, 255, 0.1)',
+										borderRadius: 2,
 									}}
 								/>
 								<CardContent
@@ -265,7 +270,6 @@ export default function AddOnSelection({eventId, event_date_id,bookingData,setBo
 															justifyContent: 'space-between',
 															alignItems: 'center',
 															mb: 1,
-															p: 1,
 															bgcolor: 'background.paper',
 															borderRadius: 1,
 														}}
@@ -386,6 +390,14 @@ export default function AddOnSelection({eventId, event_date_id,bookingData,setBo
 					onAddToBooking={handleAddToBooking}
 				/>
 			</Container>
+			<Typography variant="body1" fontSize={20} color="rgba(255, 255, 255, 0.6)" maxWidth={300} ml="auto" sx={{
+				fontStyle : "italic",
+				cursor : "pointer"
+			}}
+			onClick={handleNext}
+			>
+			Skip
+			</Typography>
 		</Box>
 	)
 }

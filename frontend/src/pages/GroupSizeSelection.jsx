@@ -66,7 +66,7 @@ export default function GroupSizeSelection({packageId, onNext, setBookingData, b
 		<Box className="min-h-screen bg-transparent text-white">
 			<Container maxWidth="lg" sx={{ pt: 6, pb: 8 }}>
 				{/* Main Content */}
-				<Box sx={{ maxWidth: 500, mx: 'auto' }}>
+				<Box sx={{ maxWidth: 600, mx: 'auto' }}>
 					<Typography variant="h3" component="h1" gutterBottom align="left">
 						Select Your Group Size
 					</Typography>
