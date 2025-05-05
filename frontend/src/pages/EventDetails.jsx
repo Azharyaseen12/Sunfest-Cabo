@@ -21,7 +21,6 @@ export default function EventDetails() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const navigate = useNavigate()
-  const { eventId } = useParams()
 
   useEffect(() => {
     const fetchPackages = async () => {
@@ -165,7 +164,7 @@ export default function EventDetails() {
               color="primary"
               sx={{ width: '200px', height: '50px' }}
               onClick={() => {
-                navigate(`/events/${eventId}/packages/${event.dates[0].id}/booking/packages`)
+                navigate('/events/booking')
               }}
             >
               View Packages

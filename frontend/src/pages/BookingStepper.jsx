@@ -26,8 +26,6 @@ const BookingStepper = () => {
       path: 'packages', 
       component: <PackageSelection 
         packageId={packageId} 
-        eventId={eventId} 
-        event_date_id={event_date_id} 
         onNext={() => navigateToStep(1)}
         setBookingData={setBookingData} 
         bookingData={bookingData}
@@ -39,8 +37,8 @@ const BookingStepper = () => {
       path: 'ticket-type', 
       component: <SelectYourTicketType 
         packageId={packageId} 
-        eventId={eventId} 
-        event_date_id={event_date_id}
+         
+        
         onNext={() => navigateToStep(2)}
         onBack={() => navigateToStep(0)}
         setBookingData={setBookingData}
@@ -52,8 +50,8 @@ const BookingStepper = () => {
       path: 'group-size', 
       component: <GroupSizeSelection 
         packageId={packageId} 
-        eventId={eventId} 
-        event_date_id={event_date_id}
+         
+        
         onNext={() => navigateToStep(3)}
         onBack={() => navigateToStep(1)}
         setBookingData={setBookingData}
@@ -65,8 +63,8 @@ const BookingStepper = () => {
       path: 'accommodation', 
       component: <AccommodationSelection 
       packageId={packageId} 
-        eventId={eventId} 
-        event_date_id={event_date_id}
+         
+        
         onNext={() => navigateToStep(4)}
         onBack={() => navigateToStep(2)}
         setBookingData={setBookingData}
@@ -79,8 +77,8 @@ const BookingStepper = () => {
       path: 'rooms', 
       component: <RoomSelection 
         packageId={packageId} 
-        eventId={eventId} 
-        event_date_id={event_date_id}
+         
+        
         onNext={() => navigateToStep(5)}
         onBack={() => navigateToStep(3)}
         setBookingData={setBookingData}
@@ -92,8 +90,8 @@ const BookingStepper = () => {
       path: 'add-ons', 
       component: <AddOnSelection 
         packageId={packageId} 
-        eventId={eventId} 
-        event_date_id={event_date_id}
+         
+        
         onNext={() => navigateToStep(6)}
         onBack={() => navigateToStep(4)}
         bookingData={bookingData}
@@ -105,8 +103,8 @@ const BookingStepper = () => {
       path: 'after-party', 
       component: <AfterPartySelection 
         packageId={packageId} 
-        eventId={eventId} 
-        event_date_id={event_date_id}
+         
+        
         onNext={() => navigateToStep(7)}
         onBack={() => navigateToStep(5)}
         bookingData={bookingData}
@@ -118,8 +116,8 @@ const BookingStepper = () => {
       path: 'review', 
       component: <ReviewPackage 
         packageId={packageId} 
-        eventId={eventId} 
-        event_date_id={event_date_id}
+         
+        
         onBack={() => navigateToStep(5)}
         bookingData={bookingData}
         setBookingData={setBookingData}

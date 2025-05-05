@@ -8,40 +8,30 @@ import {
 import api from '../utils/api'
 import PackageCard from '../components/PackageCard' 
 
-export default function PackageSelection({eventId, event_date_id,onNext,setBookingData,bookingData}) {
-  const [planes, setPlanes] = useState([])
-  const [event, setEvent] = useState({})
+export default function PackageSelection({onNext,setBookingData,bookingData}) {
+  const [packages,setPackages] = useState([])
+  // const [loading, setLoading] = useState(true)
+  // const [error, setError] = useState(null)  
   const [selectedDate, setSelectedDate] = useState(null)
 
   useEffect(() => {
-    const fetchPlanes = async () => {
+    const fetchPackages = async () => {
       try {
-        const response = await api.get(
-          `events/pricing-plans?event_date_id=${event_date_id}`
-        )
-        setPlanes(response.data)
+        // setLoading(true);
+        const response = await api.get(`event/packages/`);
+        console.log(response.data)
+        setPackages(response.data); 
+        // setError(null);
       } catch (error) {
-        console.error('Error fetching events:', error)
+        console.error('Error fetching packages:', error);
+        // setError('Failed to load packages. Please try again later.');
+      } finally {
+        // setLoading(false);
       }
-    }
-    const fetchEvents = async () => {
-      try {
-        const eventresponse = await api.get(`events/events/${eventId}`)
-        setEvent(eventresponse.data)
-        // Find the selected date from the event dates array
-        const selectedDateObj = eventresponse.data.dates?.find(
-          (date) => date.id === event_date_id
-        )
-        setSelectedDate(selectedDateObj)
-      } catch (error) {
-        console.error('Error fetching events:', error)
-      }
-    }
+    };
 
-    fetchPlanes()
-    fetchEvents()
-  }, [event_date_id, eventId])
-
+    fetchPackages();  
+  }, []); 
   return (
     <Box className="min-h-screen bg-transparent text-white">
       <Container maxWidth="lg" sx={{ pt: 6, pb: 8 }}>
@@ -111,27 +101,25 @@ export default function PackageSelection({eventId, event_date_id,onNext,setBooki
             {selectedDate?.city}
           </Typography>
         </Box>
-
-        {/* Packages Grid */}
-        <Box
-          sx={{
-            display: 'grid',
-            gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' },
-            gap: 4,
-          }}
-        >
-          {planes.map((pkg) => (
-            <PackageCard 
-              key={pkg.id} 
-              pkg={pkg} 
-              eventId={eventId} 
-              event_date_id={event_date_id} 
-              onNext={onNext}
-              setBookingData={setBookingData}
-              bookingData={bookingData}
-            />
-          ))}
-        </Box>
+      {/* Packages Section */}
+      <Container maxWidth="lg" sx={{ py: 8 }} id="packages-section">
+          {/* Packages Grid */}
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' },
+              gap: 4,
+            }}
+          >
+            {packages?.flatMap((pkg) =>
+                <PackageCard
+                  key={pkg.id}
+                  pkg={pkg}
+                  onNext={onNext}
+                />
+            )}
+          </Box>
+        </Container>
       </Container>
     </Box>
   )

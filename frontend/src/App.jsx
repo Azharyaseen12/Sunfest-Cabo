@@ -150,7 +150,7 @@ function AppContent() {
 					element={<BookingStepper />} 
 					/>
 				<Route 
-					path="/events/:eventId/packages/:event_date_id/booking/:step" 
+					path="/events/booking" 
 					element={<BookingStepper />} 
 					/>
 				<Route path="/booking-success" element={<BookingSuccess />} />

@@ -11,13 +11,14 @@ import {
     Typography,
     Box,
 } from '@mui/material'
+
 import { CircleCheck } from 'lucide-react'
 import { useState } from 'react'
-import { useNavigate } from 'react-router'
+// import { useNavigate } from 'react-router'
 import Logo from '../assets/images/SunsetFestLogo.svg'
   
 export default function PackageCard({ pkg, onNext = false , setBookingData , bookingData}) {
-const navigate = useNavigate()
+// const navigate = useNavigate()
 const [showAll, setShowAll] = useState(false)
 
 
@@ -151,16 +152,7 @@ return (
             mb: 0,
             }}
         >
-            {pkg.title}
-        </Typography>
-        <Typography
-            variant="body1"
-            sx={{
-            textAlign: 'center',
-            mb:0.5
-            }}
-        >
-            {pkg.description}
+            {pkg.package_name}
         </Typography>
 
         <Typography
@@ -183,7 +175,7 @@ return (
             color="white"
             sx={{ mb: 0, textAlign: 'center', fontWeight: 'bold' }}
         >
-            From ${parseFloat(pkg.price).toFixed(2)} USD
+            From ${parseFloat(pkg.starting_price).toFixed(2)} USD
             <Typography
             component="span"
             variant="body2"
@@ -206,7 +198,7 @@ return (
             color="#FFFFFFA8"
             sx={{ textAlign: 'center', fontWeight: 'light' }}
             >
-            ${parseFloat(pkg.price).toFixed(2) * 2} USD Total.
+            ${parseFloat(pkg.starting_price).toFixed(2) * 2} USD Total.
             (Taxes and fees included)
             </Typography>
             <Typography
@@ -229,44 +221,45 @@ return (
             >
             {isSoldOut ? 'Sold Out' : 'Select this Package'}
         </Button>
-
-        {/* Features */}
+        {/* features List */}
         <List sx={{ mb: 0, flexGrow: 1 }}>
-            {pkg.feature
-            ?.slice(0, showAll ? pkg.feature.length : 4)
+        {pkg?.features
+            ?.slice(0, showAll ? pkg.features.length : 4)
             .map((feature, index) => (
-                <ListItem key={index} sx={{ py: 0.5 }}>
+            <ListItem key={index} sx={{ py: 0.5 }}>
                 <ListItemIcon sx={{ minWidth: 32 }}>
-                    <CircleCheck size={16} color="#F821DB" />
+                <CircleCheck size={16} color="#F821DB" />
                 </ListItemIcon>
                 <ListItemText>
-                    <Typography
+                <Typography
                     sx={{
-                        color: '#FFFFFFA8',
-                        fontWeight: 'light',
-                        fontSize: '14px',
+                    color: '#FFFFFFA8',
+                    fontWeight: 'light',
+                    fontSize: '14px',
                     }}
-                    >
-                    {feature.name}
-                    </Typography>
+                >
+                    {feature?.feature_text}
+                </Typography>
                 </ListItemText>
-                </ListItem>
+            </ListItem>
             ))}
-            {pkg.feature?.length > 4 && !showAll && (
+        
+        {/* Show "View More" button if there are more than 4 features */}
+        {pkg.features?.length > 4 && !showAll && (
             <Button
-                onClick={() => setShowAll(true)}
-                sx={{
+            onClick={() => setShowAll(true)}
+            sx={{
                 color: '#F821DB',
                 textTransform: 'none',
                 fontSize: '16px',
                 mt: 1,
                 textAlign: 'center',
                 width: '100%',
-                }}
+            }}
             >
-                View More
+            View More
             </Button>
-            )}
+        )}
         </List>
         </CardContent>
     </Card>
