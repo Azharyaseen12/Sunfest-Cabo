@@ -28,7 +28,15 @@ class PackageSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Package
-        fields = ["id", "package_name", "description", "is_active", "features"]
+        fields = [
+            "id",
+            "package_name",
+            "description",
+            "is_active",
+            "features",
+            "starting_price",
+            "is_hotel_required",
+        ]
 
 
 class TicketTypeSerializer(serializers.ModelSerializer):
