@@ -33,8 +33,6 @@ class TicketTypeAdmin(admin.ModelAdmin):
         "ticket_name",
         "package_name",
         "price",
-        "total_inventory",
-        "remaining_inventory",
     )
     search_fields = ("ticket_name", "description")
     list_filter = ("package",)

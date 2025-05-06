@@ -52,8 +52,6 @@ class TicketTypeSerializer(serializers.ModelSerializer):
             "ticket_name",
             "price",
             "description",
-            "total_inventory",
-            "remaining_inventory",
         ]
 
 
@@ -66,6 +64,10 @@ class EventDaySerializer(serializers.ModelSerializer):
 class TicketInventorySerializer(serializers.ModelSerializer):
     ticket_type = TicketTypeSerializer(read_only=True)
     event_day = EventDaySerializer(read_only=True)
+    ticket_type_day = serializers.SerializerMethodField()
+
+    def get_ticket_type_day(self, obj):
+        return f"ONE_DAY" if obj.event_day else "MULTI_DAY"
 
     class Meta:
         model = TicketInventory
@@ -75,6 +77,7 @@ class TicketInventorySerializer(serializers.ModelSerializer):
             "event_day",
             "total_inventory",
             "remaining_inventory",
+            "ticket_type_day",
         ]
 
 
