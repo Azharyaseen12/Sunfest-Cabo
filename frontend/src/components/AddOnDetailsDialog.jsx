@@ -110,7 +110,8 @@ export default function AddOnDetailsDialog({
 			PaperProps={{
 				sx: {
 					borderRadius: 2,
-					bgcolor: 'background.paper',
+					bgcolor:"#17171799",
+					backdropFilter:"blur(10px)"
 				},
 			}}
 		>
@@ -129,21 +130,24 @@ export default function AddOnDetailsDialog({
 			</DialogTitle>
 
 			<DialogContent dividers>
-				<Box sx={{ mb: 3 }}>
+				<Box sx={{ mb: 3 }} bgcolor="rgba(255,255,255,0.1)" borderRadius={2}>
 					<CardMedia
 						component="img"
 						image={addOn.image}
-						alt={addOn.title}
+						alt={addOn.add_on_name}
 						sx={{
 							height: 300,
 							width: '100%',
 							objectFit: 'cover',
-							borderRadius: 1,
+							borderRadius: 2,
 						}}
 					/>
 				</Box>
+				<Typography variant="h6" color='rgba(255,255,255)' paragraph>
+					{addOn.add_on_name}
+				</Typography>
 
-				<Typography variant="body1" paragraph>
+				<Typography variant="body2" color='rgba(255,255,255,0.5)' paragraph>
 					{addOn.description}
 				</Typography>
 
@@ -305,11 +309,14 @@ export default function AddOnDetailsDialog({
 			</DialogContent>
 
 			<DialogActions sx={{ p: 2 }}>
-				<Button onClick={handleClose}>Cancel</Button>
+				<Button  onClick={handleClose}>Cancel</Button>
 				<Button
 					variant="contained"
 					onClick={handleAddToBooking}
 					disabled={selectedTimeSlots.length === 0}
+					sx={{
+						color:"white"
+					}}
 				>
 					Add to Booking
 				</Button>

@@ -1,403 +1,341 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router'
 import {
-	Box,
-	Container,
-	Typography,
-	Button,
-	Breadcrumbs,
-	Card,
-	CardContent,
-	CardMedia,
-	Chip,
-	IconButton,
-	Alert,
-	CircularProgress,
-	Grid,
-	List,
-	ListItem,
-	ListItemText,
+    Box,
+    Container,
+    Typography,
+    Button,
+    Card,
+    CardContent,
+    CardMedia,
+    IconButton,
+    Alert,
+    CircularProgress,
+    Tooltip
 } from '@mui/material'
-import { ChevronRight, EditIcon, DeleteIcon } from 'lucide-react'
-import AddOnDetailsDialog from '../components/AddOnDetailsDialog'
+import { ChevronRight, DeleteIcon } from 'lucide-react'
 import api from '../utils/api'
 
-export default function AddOnSelection({eventId, event_date_id,bookingData,setBookingData,onNext}) {
-	const [addOns, setAddOns] = useState([])
-	const [selectedAddOns, setSelectedAddOns] = useState([])
-	const [dialogOpen, setDialogOpen] = useState(false)
-	const [selectedAddon, setSelectedAddon] = useState(null)
-	const [selectedTimeSlot, setSelectedTimeSlot] = useState(null)
-	const [quantity, setQuantity] = useState(1)
-	const [dialogError, setDialogError] = useState('')
-	const [loading, setLoading] = useState(true)
-	const [error, setError] = useState(null)
+export default function AddOnSelection({ eventId, event_date_id, bookingData, setBookingData, onNext }) {
+    const [addOns, setAddOns] = useState([])
+    const [selectedAddOns, setSelectedAddOns] = useState(bookingData.selectedAddOns || [])
+    const [loading, setLoading] = useState(true)
+    const [error, setError] = useState(null)
 
-	useEffect(() => {
-		const fetchAddOns = async () => {
-			try {
-				setLoading(true)
+    useEffect(() => {
+        const fetchAddOns = async () => {
+            try {
+                setLoading(true)
+                const eventDateResponse = await api.get(`/event/add-ons/`)
+                setAddOns(eventDateResponse.data)
+                setError(null)
+            } catch (err) {
+                setError('Failed to load add-ons. Please try again later.')
+                console.error('Error fetching add-ons:', err)
+            } finally {
+                setLoading(false)
+            }
+        }
+        fetchAddOns()
+    }, [eventId, event_date_id])
 
-				// First fetch the event date to get the actual date
-				const eventDateResponse = await api.get(
-					`/events/event-dates/${event_date_id}`
-				)
-				const eventDate = new Date(eventDateResponse.data.date)
-				const formattedDate = eventDate.toISOString().split('T')[0] // Format as YYYY-MM-DD
+    const handleAddItem = (addon) => {
+        const existingIndex = selectedAddOns.findIndex(item => item.addOn.id === addon.id)
+        
+        if (existingIndex >= 0) {
+            const updatedSelections = [...selectedAddOns]
+            updatedSelections[existingIndex] = {
+                addOn: addon,
+                quantity: 1,
+                totalPrice: addon.price_per_person
+            }
+            setSelectedAddOns(updatedSelections)
+        } else {
+            const newSelection = {
+                addOn: addon,
+                quantity: 1,
+                totalPrice: addon.price_per_person
+            }
+            setSelectedAddOns(prev => [...prev, newSelection])
+        }
+    }
 
-				const response = await api.get(`/events/add-ons/?event_id=${eventId}`)
-				const addOnsWithAvailability = await Promise.all(
-					response.data.map(async (addon) => {
-						const availabilityResponse = await api.get(
-							`/events/add-ons/${addon.id}/availability/?event_id=${eventId}&date=${formattedDate}`
-						)
-						return {
-							...addon,
-							availableTickets: availabilityResponse.data.available_tickets,
-							timeSlots: addon.has_time_slots
-								? await Promise.all(
-										addon.time_slots.map(async (slot) => {
-											const slotAvailabilityResponse = await api.get(
-												`/events/add-ons/${addon.id}/time-slots/${slot.id}/availability/?event_id=${eventId}&date=${formattedDate}`
-											)
-											return {
-												...slot,
-												availableCapacity:
-													slotAvailabilityResponse.data.available_capacity,
-											}
-										})
-								  )
-								: [],
-						}
-					})
-				)
-				setAddOns(addOnsWithAvailability)
-				setError(null)
-			} catch (err) {
-				setError('Failed to load add-ons. Please try again later.')
-				console.error('Error fetching add-ons:', err)
-			} finally {
-				setLoading(false)
-			}
-		}
+    const handleRemoveSelection = (index) => {
+        setSelectedAddOns((prev) => prev.filter((_, i) => i !== index))
+    }
 
-		fetchAddOns()
-	}, [eventId, event_date_id])
+    const handleUpdateQuantity = (index, newQuantity) => {
+        if (newQuantity < 1) return
+        setSelectedAddOns(prev => {
+            const updated = [...prev]
+            const item = updated[index]
+            updated[index] = {
+                ...item,
+                quantity: newQuantity,
+                totalPrice: newQuantity * item.addOn.price_per_person
+            }
+            return updated
+        })
+    }
 
-	const handleAddItem = (addon) => {
-		setSelectedAddon(addon)
-		setSelectedTimeSlot(null)
-		setQuantity(1)
-		setDialogError('')
-		setDialogOpen(true)
-	}
+    const getTotalPrice = () => {
+        return selectedAddOns.reduce(
+            (total, selection) => parseFloat(total) + parseFloat(selection.totalPrice),
+            0
+        )
+    }
 
-	const handleCloseDialog = () => {
-		setDialogOpen(false)
-		setSelectedAddon(null)
-		setSelectedTimeSlot(null)
-		setQuantity(1)
-		setDialogError('')
-	}
+    const handleNext = () => {
+        const updatedBookingData = {
+            ...bookingData,
+            selectedAddOns: selectedAddOns.map((item) => ({
+                addOn: item.addOn,
+                quantity: item.quantity,
+                totalPrice: item.totalPrice,
+            })),
+            totalPrice: (bookingData.totalPrice || 0) + getTotalPrice()
+        }
+        setBookingData(updatedBookingData)
+        onNext()
+    }
 
-	const handleAddToBooking = (selectedTimeSlots) => {
-		if (!selectedAddon) return
+    if (loading) {
+        return (
+            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+                <CircularProgress />
+            </Box>
+        )
+    }
 
-		const newSelection = {
-			addOn: selectedAddon,
-			timeSlots: selectedTimeSlots,
-			totalPrice: selectedTimeSlots.reduce((total, slot) => {
-				return total + slot.quantity * slot.price
-			}, 0),
-		}
+    if (error) {
+        return (
+            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+                <Typography color="error">{error}</Typography>
+            </Box>
+        )
+    }
 
-		setSelectedAddOns((prev) => [...prev, newSelection])
-		handleCloseDialog()
-	}
+    return (
+        <Box className="min-h-screen bg-transparent text-white">
+            <Container maxWidth="xl" sx={{ pt: 6, pb: 8 }}>
+                <Typography variant="h4" component="h3" gutterBottom>
+                    Choose Your Add-ons
+                </Typography>
 
-	const handleRemoveSelection = (index) => {
-		setSelectedAddOns((prev) => prev.filter((_, i) => i !== index))
-	}
+                <Box
+                    sx={{
+                        display: 'grid',
+                        gridTemplateColumns: {
+                            xs: '1fr',
+                            sm: 'repeat(2, 1fr)',
+                            md: 'repeat(3, 1fr)',
+                        },
+                        gap: 3,
+                        width: '100%',
+                        maxWidth: '100%',
+                        pb: 8,
+                    }}
+                >
+                    {addOns.map((addon) => {
+                        const selections = selectedAddOns.filter(
+                            (selected) => selected.addOn.id === addon.id
+                        )
+                        const isSelected = selections.length > 0
+                        const isDisabled = addon.remaining_inventory !== null && addon.remaining_inventory <= 0
 
-	const getTotalPrice = () => {
-		return selectedAddOns.reduce(
-			(total, selection) => total + selection.totalPrice,
-			0
-		)
-	}
+                        return (
+                            <Card
+                                key={addon.id}
+                                sx={{
+                                    height: '100%',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    bgcolor: 'rgba(255, 255, 255, 0.1)',
+                                    border: isSelected ? '2px solid' : 'none',
+                                    borderColor: 'primary.main',
+                                    '&:hover': { boxShadow: 6 },
+                                    px: 1.5,
+                                    py: 1,
+                                    borderRadius: 2,
+                                    opacity: isDisabled ? 0.6 : 1
+                                }}
+                            >
+                                <CardMedia
+                                    component="img"
+                                    image={addon.image}
+                                    alt={addon.add_on_name}
+                                    sx={{
+                                        height: 240,
+                                        objectFit: 'contain',
+                                        backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                                        borderRadius: 2,
+                                    }}
+                                />
+                                <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+                                    <Typography variant="h5" component="h2" color="white" gutterBottom>
+                                        {addon.add_on_name}
+                                    </Typography>
+                                    <Typography variant="body2" color="rgba(255, 255, 255, 0.8)" sx={{ mb: 'auto' }}>
+                                        {addon.description}
+                                    </Typography>
+                                    <Box sx={{ mt: 3 }}>
+                                        <Typography variant="h6" color="primary.main" align="center" gutterBottom>
+                                            From ${parseFloat(addon.price_per_person).toFixed(2)} USD
+                                            <Typography component="span" variant="body2" color="text.secondary" sx={{ ml: 1 }}>
+                                                / Person
+                                            </Typography>
+                                        </Typography>
 
-	const handleNext = () => {
-		setBookingData({
-			...bookingData,
-			selectedAddOns: selectedAddOns.map((item) => ({
-				addOn: item.addOn,
-				timeSlots: item.timeSlots,
-				quantity: item.timeSlots.reduce(
-					(sum, slot) => sum + slot.quantity,
-					0
-				),
-				totalPrice: item.totalPrice,
-			})),
-		})
-		onNext();
-	}
+                                        <Typography variant='body2' color='rgba(255,255,255,0.5)' textAlign="center" mb={2}>
+                                            ${(parseFloat(addon.price_per_person) * 2).toFixed(2)} USD Total (Taxes and fees included)
+                                            *Price shown based on 2 people
+                                        </Typography>
 
-	if (loading) {
-		return (
-			<Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
-				<CircularProgress />
-			</Box>
-		)
-	}
+                                        {isSelected && (
+                                            <Box>
+                                                {selections.map((selection, index) => {
+                                                    const globalIndex = selectedAddOns.findIndex(
+                                                        item => item.addOn.id === addon.id
+                                                    )
+                                                    
+                                                    return (
+                                                        <Box
+                                                            key={index}
+                                                            sx={{
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                gap: 2,
+                                                            }}
+                                                        >
+                                                            <Box sx={{ 
+                                                                display: 'flex', 
+                                                                alignItems: 'center', 
+                                                                gap: 1,
+                                                                bgcolor: 'rgba(255, 255, 255, 0.1)',
+                                                                borderRadius: 1,
+                                                                p: '4px',
+                                                            }}>
+                                                                <IconButton
+                                                                    size="medium"
+                                                                    onClick={() => handleUpdateQuantity(globalIndex, selection.quantity - 1)}
+                                                                    disabled={selection.quantity <= 1}
+                                                                    sx={{
+                                                                        color: 'white',
+                                                                        p: '8px',
+                                                                        '&:hover': { 
+                                                                            bgcolor: 'rgba(255, 255, 255, 0.2)' 
+                                                                        },
+                                                                    }}
+                                                                >
+                                                                    -
+                                                                </IconButton>
+                                                                <Typography
+                                                                    variant="body1"
+                                                                    sx={{ 
+                                                                        minWidth: '24px', 
+                                                                        textAlign: 'center',
+                                                                        color: 'white'
+                                                                    }}
+                                                                >
+                                                                    {selection.quantity}
+                                                                </Typography>
+                                                                <IconButton
+                                                                    size="medium"
+                                                                    onClick={() => handleUpdateQuantity(globalIndex, selection.quantity + 1)}
+                                                                    disabled={addon.remaining_inventory !== null && 
+                                                                              (selection.quantity >= addon.remaining_inventory)}
+                                                                    sx={{
+                                                                        color: 'white',
+                                                                        p: '8px',
+                                                                        '&:hover': { 
+                                                                            bgcolor: 'rgba(255, 255, 255, 0.2)' 
+                                                                        },
+                                                                    }}
+                                                                >
+                                                                    +
+                                                                </IconButton>
+                                                            </Box>
+                                                            <Button
+                                                                variant="contained"
+                                                                color="error"
+                                                                onClick={() => handleRemoveSelection(globalIndex)}
+                                                                sx={{ flex: 1 }}
+                                                            >
+                                                                Remove
+                                                            </Button>
+                                                        </Box>
+                                                    )
+                                                })}
+                                            </Box>
+                                        )}
 
-	if (error) {
-		return (
-			<Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
-				<Typography color="error">{error}</Typography>
-			</Box>
-		)
-	}
+                                        {!isSelected && <Tooltip title={isDisabled ? 'This add-on is sold out' : ''}>
+                                            <span>
+                                                <Button
+                                                    variant={isSelected ? "outlined" : "contained"}
+                                                    color="primary"
+                                                    fullWidth
+                                                    onClick={() => handleAddItem(addon)}
+                                                    disabled={isDisabled}
+                                                >
+                                                    Add Item
+                                                    {isDisabled && ' (Sold Out)'}
+                                                </Button>
+                                            </span>
+                                        </Tooltip>}
+                                    </Box>
+                                </CardContent>
+                            </Card>
+                        )
+                    })}
+                </Box>
 
-	return (
-		<Box className="min-h-screen bg-transparent text-white">
-			<Container maxWidth="xl" sx={{ pt: 6, pb: 8 }}>
-				{/* Main Content */}
-				<Typography variant="h4" component="h3" gutterBottom>
-					Choose Your Add-ons
-				</Typography>
-
-				{/* Available Add-ons Grid */}
-				<Box
-					sx={{
-						display: 'grid',
-						gridTemplateColumns: {
-							xs: '1fr',
-							sm: 'repeat(2, 1fr)',
-							md: 'repeat(3, 1fr)',
-						},
-						gap: 3,
-						width: '100%',
-						maxWidth: '100%',
-						pb: 8, // Add padding at bottom to account for sticky footer
-					}}
-				>
-					{addOns.map((addon) => {
-						const selections = selectedAddOns.filter(
-							(selected) => selected.addOn.id === addon.id
-						)
-						const isSelected = selections.length > 0
-						const availableTickets = addon.availableTickets
-
-						return (
-							<Card
-								key={addon.id}
-								sx={{
-									height: '100%',
-									display: 'flex',
-									flexDirection: 'column',
-									bgcolor: isSelected
-										? 'rgba(210, 105, 30, 0.4)'
-										: 'rgba(255, 255, 255, 0.1)',
-									border: isSelected ? '2px solid' : 'none',
-									borderColor: 'primary.main',
-									'&:hover': {
-										boxShadow: 6,
-									},
-									px: 1.5,
-									py: 1,
-									borderRadius: 2,
-								}}
-							>
-								<CardMedia
-									component="img"
-									image={addon.image}
-									alt={addon.title}
-									sx={{
-										height: 240,
-										objectFit: 'contain',
-										backgroundColor: 'rgba(255, 255, 255, 0.1)',
-										borderRadius: 2,
-									}}
-								/>
-								<CardContent
-									sx={{
-										flexGrow: 1,
-										display: 'flex',
-										flexDirection: 'column',
-									}}
-								>
-									<Typography
-										variant="h5"
-										component="h2"
-										color="white"
-										gutterBottom
-									>
-										{addon.title}
-									</Typography>
-									<Typography
-										variant="body2"
-										color="rgba(255, 255, 255, 0.8)"
-										sx={{ mb: 'auto' }}
-									>
-										{addon.description}
-									</Typography>
-									<Box sx={{ mt: 3 }}>
-										<Typography
-											variant="h6"
-											color="primary.main"
-											align="center"
-											gutterBottom
-										>
-											From ${parseFloat(addon.price).toFixed(2)} USD
-											<Typography
-												component="span"
-												variant="body2"
-												color="text.secondary"
-												sx={{ ml: 1 }}
-											>
-												/ Person
-											</Typography>
-										</Typography>
-
-										{/* Show selections if any exist */}
-										{isSelected && (
-											<Box sx={{ mb: 2 }}>
-												{selections.map((selection, index) => (
-													<Box
-														key={index}
-														sx={{
-															display: 'flex',
-															justifyContent: 'space-between',
-															alignItems: 'center',
-															mb: 1,
-															bgcolor: 'background.paper',
-															borderRadius: 1,
-														}}
-													>
-														<Box>
-															<Typography variant="body2" color="text.primary">
-																Quantity: {selection.timeSlots.length}
-															</Typography>
-															{addon.has_time_slots && (
-																<Typography
-																	variant="body2"
-																	color="text.secondary"
-																>
-																	Time Slots:{' '}
-																	{selection.timeSlots
-																		.map((slot) => slot.id)
-																		.join(', ')}
-																</Typography>
-															)}
-														</Box>
-														<Box>
-															<IconButton
-																size="small"
-																onClick={() => handleRemoveSelection(index)}
-															>
-																<DeleteIcon />
-															</IconButton>
-														</Box>
-													</Box>
-												))}
-											</Box>
-										)}
-
-										<Button
-											variant="contained"
-											color="primary"
-											fullWidth
-											onClick={() => handleAddItem(addon)}
-											disabled={availableTickets <= 0}
-										>
-											{isSelected ? 'Add Another' : 'Add Item'}
-										</Button>
-									</Box>
-								</CardContent>
-							</Card>
-						)
-					})}
-				</Box>
-
-				{/* Sticky Footer */}
-				<Box
-					sx={{
-						position: 'fixed',
-						bottom: 0,
-						left: 0,
-						right: 0,
-						bgcolor: 'background.paper',
-						boxShadow: 3,
-						p: 2,
-						zIndex: 1000,
-					}}
-				>
-					<Container maxWidth="xl">
-						<Box
-							sx={{
-								display: 'flex',
-								justifyContent: 'space-between',
-								alignItems: 'center',
-							}}
-						>
-							{selectedAddOns.length > 0 ? (
-								<>
-									<Typography variant="h6">
-										Total: ${getTotalPrice().toFixed(2)} USD
-									</Typography>
-									<Button
-										variant="contained"
-										color="primary"
-										onClick={handleNext}
-										size="large"
-									>
-										Continue to Review
-									</Button>
-								</>
-							) : (
-								<Box
-									sx={{
-										width: '100%',
-										display: 'flex',
-										justifyContent: 'flex-end',
-									}}
-								>
-									<Button
-										variant="outlined"
-										color="primary"
-										onClick={handleNext}
-										size="large"
-									>
-										Skip Add-ons
-									</Button>
-								</Box>
-							)}
-						</Box>
-					</Container>
-				</Box>
-
-				{/* Add-on Details Dialog */}
-				<AddOnDetailsDialog
-					open={dialogOpen}
-					onClose={handleCloseDialog}
-					addOn={selectedAddon}
-					selectedTimeSlot={selectedTimeSlot}
-					setSelectedTimeSlot={setSelectedTimeSlot}
-					quantity={quantity}
-					setQuantity={setQuantity}
-					error={dialogError}
-					setError={setDialogError}
-					onAddToBooking={handleAddToBooking}
-				/>
-			</Container>
-			<Typography variant="body1" fontSize={20} color="rgba(255, 255, 255, 0.6)" maxWidth={300} ml="auto" sx={{
-				fontStyle : "italic",
-				cursor : "pointer"
-			}}
-			onClick={handleNext}
-			>
-			Skip
-			</Typography>
-		</Box>
-	)
+                {/* Sticky Footer */}
+                <Box
+                    sx={{
+                        position: 'fixed',
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        bgcolor:"#17171799",
+                        backdropFilter:"blur(10px)",
+                        boxShadow: 3,
+                        p: 2,
+                        zIndex: 1000,
+                    }}
+                >
+                    <Container maxWidth="xl">
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            {selectedAddOns.length > 0 ? (
+                                <>
+                                    <Typography variant="h6">
+                                        Total: ${getTotalPrice().toFixed(2)} USD
+                                    </Typography>
+                                    <Button variant="contained" color="primary" onClick={handleNext} size="large">
+                                        Continue to Review
+                                    </Button>
+                                </>
+                            ) : (
+                                <Box sx={{ width: '100%', display: 'flex', justifyContent: 'flex-end' }}>
+                                    <Button variant="outlined" color="primary" onClick={handleNext} size="large">
+                                        Skip Add-ons
+                                    </Button>
+                                </Box>
+                            )}
+                        </Box>
+                    </Container>
+                </Box>
+            </Container>
+            <Typography 
+                variant="body1" 
+                fontSize={20} 
+                color="rgba(255, 255, 255, 0.6)" 
+                maxWidth={300} 
+                ml="auto" 
+                sx={{ fontStyle: "italic", cursor: "pointer" }}
+                onClick={handleNext}
+            >
+                Skip
+            </Typography>
+        </Box>
+    )
 }

@@ -29,12 +29,9 @@ export default function GroupSizeSelection({packageId, onNext, setBookingData, b
 	}, [packageId, bookingData])
 
 	const handleNext = () => {
-		const selectedGroup = groups.find(group => group.id === selectedSize)
 		setBookingData({
 			...bookingData, 
 			groupSize: selectedSize,
-			totalPrice: ((selectedGroup?.number_of_persons || 1) * parseFloat(bookingData.pricePerPerson)) + 
-            ((selectedGroup?.number_of_persons || 1) * parseFloat(bookingData?.afterParty?.price_per_person || 0))
 		})
 		onNext()
 	}

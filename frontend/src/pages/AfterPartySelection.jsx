@@ -5,38 +5,59 @@ import {
   Typography,
   Button,
   Checkbox,
-  Chip,
+  Alert,
   Stack,
+  Chip 
 } from '@mui/material'
 import api from '../utils/api'
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle'
+import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked'
 
 export default function AfterPartySelection({ packageId, onNext, setBookingData, bookingData }) {
   const [selectedParties, setSelectedParties] = useState(bookingData?.afterParties || [])
   const [afterParties, setAfterParties] = useState([])
+  const [errorMessage, setErrorMessage] = useState(null)
 
   const handleSelect = (party) => {
-    setSelectedParties(prev => {
-      const isSelected = prev.some(p => p.id === party.id)
-      return isSelected
-        ? prev.filter(p => p.id !== party.id)
-        : [...prev, party]
-    })
+    // Check if this party is already selected
+    const isSelected = selectedParties.some(p => p.id === party.id)
+    
+    if (isSelected) {
+      // If already selected, remove it
+      setSelectedParties(prev => prev.filter(p => p.id !== party.id))
+      setErrorMessage(null)
+      return
+    }
+
+    // Check if there's already a party with the same date
+    const sameDateParty = selectedParties.find(p => 
+      new Date(p.event_date).toDateString() === new Date(party.event_date).toDateString()
+    )
+
+    if (sameDateParty) {
+      setErrorMessage(`You can only select one party per date. You've already selected a party for ${new Date(party.event_date).toLocaleDateString()}.`)
+      return
+    }
+
+    // If no conflicts, add the new party to existing selections
+    setSelectedParties(prev => [...prev, party])
+    setErrorMessage(null)
   }
 
   const handleNext = () => {
+    const totalAmount = selectedParties.reduce((sum, party) => sum + parseFloat(party.price_per_person), 0);
+    
     setBookingData(prev => ({
       ...prev,
       afterParties: selectedParties,
-    }))
-    onNext()
+      partyPrice: totalAmount,
+    }));
+    onNext();
   }
-
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await api.get(`event/after-parties/?after_party_type=${bookingData.after_party_type}`)
+        const response = await api.get(`event/after-parties/`)
         setAfterParties(response.data)
       } catch (error) {
         console.error('Error fetching after parties:', error)
@@ -53,35 +74,13 @@ export default function AfterPartySelection({ packageId, onNext, setBookingData,
             After Party Experiences
           </Typography>
           <Typography variant="body1" sx={{ mb: 4, color: '#FFFFFFA8' }} align="left">
-            Select one or more after party options to enhance your experience
+            Select one party per date (you can choose multiple parties for different dates)
           </Typography>
 
-          {/* Selected parties chip display */}
-          {selectedParties.length > 0 && (
-            <Box sx={{ mb: 4 }}>
-              <Typography variant="subtitle1" sx={{ mb: 1 }}>
-                Your Selections:
-              </Typography>
-              <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', gap: 1 }}>
-                {selectedParties.map(party => (
-                  <Chip
-                    key={party.id}
-                    label={`${party.location} ($${party.price_per_person})`}
-                    onDelete={() => handleSelect(party)}
-                    sx={{
-                      backgroundColor: 'rgba(248, 33, 219, 0.2)',
-                      color: 'white',
-                      '& .MuiChip-deleteIcon': {
-                        color: 'rgba(255, 255, 255, 0.7)',
-                        '&:hover': {
-                          color: 'white'
-                        }
-                      }
-                    }}
-                  />
-                ))}
-              </Stack>
-            </Box>
+          {errorMessage && (
+            <Alert severity="error" sx={{ mb: 3, background: "rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.6)" }}>
+              {errorMessage}
+            </Alert>
           )}
 
           <Box sx={{ 
@@ -93,23 +92,29 @@ export default function AfterPartySelection({ packageId, onNext, setBookingData,
             {afterParties.map((party) => {
               const isSelected = selectedParties.some(p => p.id === party.id)
               const isSoldOut = party.remaining_capacity <= 0
+              const sameDateSelected = selectedParties.some(p => 
+                new Date(p.event_date).toDateString() === new Date(party.event_date).toDateString()
+              )
 
               return (
                 <Box 
                   key={party.id}
                   onClick={() => !isSoldOut && handleSelect(party)}
                   sx={{
-                    bgcolor: isSelected ? 'rgba(248, 33, 219, 0.1)' : 'rgba(255, 255, 255, 0.05)',
+                    bgcolor: isSelected ? 'rgba(248, 33, 219, 0.1)' : 
+                             sameDateSelected ? 'rgba(255, 87, 34, 0.1)' : 'rgba(255, 255, 255, 0.05)',
                     p: 3,
                     borderRadius: 2,
-                    border: isSelected ? '1px solid #F821DB' : '1px solid rgba(255, 255, 255, 0.1)',
+                    border: isSelected ? '1px solid #F821DB' : 
+                           sameDateSelected ? '1px solid #FF5722' : '1px solid rgba(255, 255, 255, 0.1)',
                     cursor: isSoldOut ? 'not-allowed' : 'pointer',
                     position: 'relative',
                     transition: 'all 0.2s ease',
                     '&:hover': !isSoldOut && {
                       transform: 'translateY(-4px)',
                       boxShadow: '0 8px 16px rgba(0, 0, 0, 0.2)',
-                      borderColor: isSelected ? '#F821DB' : 'rgba(255, 255, 255, 0.3)'
+                      borderColor: isSelected ? '#F821DB' : 
+                                   sameDateSelected ? '#FF5722' : 'rgba(255, 255, 255, 0.3)'
                     },
                     opacity: isSoldOut ? 0.6 : 1
                   }}
@@ -143,6 +148,22 @@ export default function AfterPartySelection({ packageId, onNext, setBookingData,
                         left: 8,
                         top: 8,
                         backgroundColor: '#F44336',
+                        color: 'white',
+                        fontWeight: 'bold'
+                      }}
+                    />
+                  )}
+
+                  {/* Date conflict warning */}
+                  {sameDateSelected && !isSelected && !isSoldOut && (
+                    <Chip
+                      label="Date conflict"
+                      size="small"
+                      sx={{
+                        position: 'absolute',
+                        left: 8,
+                        top: 8,
+                        backgroundColor: '#FF5722',
                         color: 'white',
                         fontWeight: 'bold'
                       }}
@@ -218,21 +239,8 @@ export default function AfterPartySelection({ packageId, onNext, setBookingData,
               }}
               onClick={handleNext}
               disabled={selectedParties.length === 0}
-              endIcon={
-                selectedParties.length > 0 && (
-                  <Chip 
-                    label={selectedParties.length} 
-                    size="small" 
-                    sx={{ 
-                      backgroundColor: 'white', 
-                      color: '#F821DB',
-                      fontWeight: 'bold'
-                    }} 
-                  />
-                )
-              }
             >
-              Continue
+              Continue ({selectedParties.length} selected)
             </Button>
           </Box>
         </Box>
