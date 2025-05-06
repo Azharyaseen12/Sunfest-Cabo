@@ -20,9 +20,17 @@ const BookingStepper = () => {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const location = useLocation();
   const packageId = location?.state?.packageId;
-  console.log("packageId" , packageId);
-  
+  const pricePerPerson = location?.state?.pricePerPerson;
 
+  console.log("packageId" , packageId);
+
+  useEffect(() => {
+    setBookingData(prev => ({
+      ...prev,
+      packageId: packageId,
+      pricePerPerson : pricePerPerson
+  }))
+  },[pricePerPerson,packageId])
 
   console.log("Booking Data" , bookingData);
   
