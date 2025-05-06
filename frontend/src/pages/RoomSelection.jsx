@@ -1,17 +1,14 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate } from 'react-router'
+import { useNavigate } from 'react-router'
 import {
 	Box,
 	Container,
 	Typography,
 	Button,
-	Breadcrumbs,
 	Card,
-	CardMedia,
 	CardContent,
 	Rating,
 	IconButton,
-	Chip,
 	Tooltip,
 	Alert,
 	Grid,
@@ -31,8 +28,6 @@ const Carousel = ({ alt }) => {
 	const defaultImage =
 		'https://images.unsplash.com/photo-1615460549969-36fa19521a4f?q=80&w=1974&auto=format&fit=crop'
 	const displayImages = [{ image: defaultImage }]
-
-	// const displayImages = images.length > 0 ? images : [{ image: defaultImage }]
 
 	const handlePrev = () => {
 		setCurrentIndex((prev) =>
@@ -55,67 +50,72 @@ const Carousel = ({ alt }) => {
 				width: '100%',
 			}}
 		>
-			<Box sx={{
-				 	height : '100%' ,
+			<Box
+				sx={{
+					height: '100%',
 					width: '100%',
-				  	display: 'flex',
+					display: 'flex',
 					justifyContent: 'center',
 					alignItems: 'center',
 					gap: 3,
-					}}>
-			<img
-				src={displayImages[currentIndex].image}
-				alt={alt}
-				style={{
-					width: '60%',
-					height: '100%',
-					transition: 'opacity 0.3s ease-in-out',
-					borderRadius: "20px",
-					objectFit: 'cover',
 				}}
-			/>
-			<img
-				src={displayImages[currentIndex].image}
-				alt={alt}
-				style={{
-					width: '25%',
-					height: '100%',
-					transition: 'opacity 0.3s ease-in-out',
-					borderRadius: "20px",
-					objectFit: 'cover',
-				}}
-			/>
-			<Box sx={{ display: 'flex',
-				justifyContent: 'center',
-				alignItems: 'center',
-				gap: 3,
-				height: '100%',
-				flexDirection: 'column',
-				width: '15%',
-				}}>
-			<img
-				src={displayImages[currentIndex].image}
-				alt={alt}
-				style={{
-					width: '100%',
-					height: '100%',
-					transition: 'opacity 0.3s ease-in-out',
-					borderRadius: "20px",
-				}}
-			/>
-			<img
-				src={displayImages[currentIndex].image}
-				alt={alt}
-				style={{
-					width: '100%',
-					height: '100%',
-					transition: 'opacity 0.3s ease-in-out',
-					borderRadius: "20px",
-				}}
-			/>
+			>
+				<img
+					src={displayImages[currentIndex].image}
+					alt={alt}
+					style={{
+						width: '60%',
+						height: '100%',
+						transition: 'opacity 0.3s ease-in-out',
+						borderRadius: '20px',
+						objectFit: 'cover',
+					}}
+				/>
+				<img
+					src={displayImages[currentIndex].image}
+					alt={alt}
+					style={{
+						width: '25%',
+						height: '100%',
+						transition: 'opacity 0.3s ease-in-out',
+						borderRadius: '20px',
+						objectFit: 'cover',
+					}}
+				/>
+				<Box
+					sx={{
+						display: 'flex',
+						justifyContent: 'center',
+						alignItems: 'center',
+						gap: 3,
+						height: '100%',
+						flexDirection: 'column',
+						width: '15%',
+					}}
+				>
+					<img
+						src={displayImages[currentIndex].image}
+						alt={alt}
+						style={{
+							width: '100%',
+							height: '100%',
+							transition: 'opacity 0.3s ease-in-out',
+							borderRadius: '20px',
+						}}
+					/>
+					<img
+						src={displayImages[currentIndex].image}
+						alt={alt}
+						style={{
+							width: '100%',
+							height: '100%',
+							transition: 'opacity 0.3s ease-in-out',
+							borderRadius: '20px',
+						}}
+					/>
+				</Box>
 			</Box>
-			</Box>
-			
+
 			{displayImages.length > 1 && (
 				<>
 					<IconButton
@@ -178,7 +178,7 @@ const Carousel = ({ alt }) => {
 	)
 }
 
-export default function RoomSelection({bookingData, setBookingData , onNext}) {
+export default function RoomSelection({ bookingData, setBookingData, onNext }) {
 	const navigate = useNavigate()
 	const dispatch = useDispatch()
 	const { selectedRooms } = useSelector((state) => state.booking)
@@ -186,10 +186,9 @@ export default function RoomSelection({bookingData, setBookingData , onNext}) {
 	const [hotel, setHotel] = useState(null)
 	const [totalCapacity, setTotalCapacity] = useState(0)
 	const [error, setError] = useState(null)
-	const [groupSizeData, setGroupSizeData] = useState(null)
 	const [loading, setLoading] = useState(true)
-	const checkInDate = new Date(bookingData.checkInDate);
-	const checkOutDate = new Date(bookingData.checkOutDate);
+	const checkInDate = new Date(bookingData.checkInDate)
+	const checkOutDate = new Date(bookingData.checkOutDate)
 
 	useEffect(() => {
 		const fetchData = async () => {
@@ -203,27 +202,17 @@ export default function RoomSelection({bookingData, setBookingData , onNext}) {
 				setLoading(true)
 				setError(null)
 
-				// Fetch group size details
-				const groupSizeResponse = await api.get(
-					`events/group-sizes/${bookingData.groupSize}`
-				)
-				if (!groupSizeResponse.data) {
-					throw new Error('Group size not found')
-				}
-				setGroupSizeData(groupSizeResponse.data)
-
-				// Fetch rooms with date availability
-				const roomsResponse = await api.get(
-					`events/rooms?accommodation_id=${bookingData.aId}&check_in=${checkInDate.toISOString()}&check_out=${checkOutDate.toISOString()}`
-				)
+				const roomsResponse = await api.get(`event/room-types`)
 				setRooms(roomsResponse.data)
-				if (roomsResponse.data.length > 0) {
-					setHotel(roomsResponse.data[0].accommodation)
-				}
+
+				const accommodationResponse = await api.get(
+					`event/hotels/${bookingData.aId}`
+				)
+				setHotel(accommodationResponse.data)
 			} catch (error) {
 				console.error('Error fetching data:', error)
 				if (error.response?.status === 404) {
-					setError('Group size not found. Please select a valid group size.')
+					setError('No rooms found. Please try again later.')
 				} else {
 					setError('Failed to load data. Please try again later.')
 				}
@@ -233,10 +222,15 @@ export default function RoomSelection({bookingData, setBookingData , onNext}) {
 		}
 
 		fetchData()
-	}, [bookingData.groupSize, bookingData.aId, bookingData.checkInDate, bookingData.checkOutDate])
+	}, [
+		bookingData.groupSize,
+		bookingData.aId,
+		bookingData.checkInDate,
+		bookingData.checkOutDate,
+	])
 
 	const canSelectRoom = (room) => {
-		if (!groupSizeData) return false
+		if (!bookingData.groupSize) return false
 
 		// Get current selections for this room type
 		const currentRoomSelections = selectedRooms.filter(
@@ -273,7 +267,7 @@ export default function RoomSelection({bookingData, setBookingData , onNext}) {
 	}
 
 	const handleQuantityChange = (room, newQuantity) => {
-		if (!groupSizeData) return
+		if (!bookingData.groupSize) return
 
 		const currentSelection = selectedRooms.find(
 			(selected) => selected.room.id === room.id
@@ -311,8 +305,7 @@ export default function RoomSelection({bookingData, setBookingData , onNext}) {
 	}
 
 	const handleNext = () => {
-		if (!groupSizeData || totalCapacity < groupSizeData.number_of_persons)
-			return
+		if (!bookingData.groupSize || totalCapacity < bookingData.groupSize) return
 
 		// Create an array of room IDs with their quantities
 		const roomIdsWithQuantities = selectedRooms
@@ -334,7 +327,7 @@ export default function RoomSelection({bookingData, setBookingData , onNext}) {
 			roomQuantities,
 			roomIdsWithQuantities,
 		})
-		onNext();
+		onNext()
 	}
 
 	if (loading) {
@@ -368,7 +361,7 @@ export default function RoomSelection({bookingData, setBookingData , onNext}) {
 		)
 	}
 
-	if (!groupSizeData) {
+	if (!bookingData.groupSize) {
 		return (
 			<Box className="min-h-screen bg-transparent text-white">
 				<Header />
@@ -391,8 +384,6 @@ export default function RoomSelection({bookingData, setBookingData , onNext}) {
 	return (
 		<Box className="min-h-screen bg-transparent text-white">
 			<Container maxWidth="xl" sx={{ pt: 6, pb: 8 }}>
-
-
 				{/* Hotel Images Carousel */}
 				{hotel && <Carousel images={hotel.images} alt={hotel.title} />}
 
@@ -415,17 +406,23 @@ export default function RoomSelection({bookingData, setBookingData , onNext}) {
 						</Typography>
 						<Typography color="primary" gutterBottom>
 							{bookingData.checkInDate
-								? new Date(bookingData.checkInDate).toLocaleDateString('en-GB', {
-										day: 'numeric',
-										month: 'short',
-								  })
+								? new Date(bookingData.checkInDate).toLocaleDateString(
+										'en-GB',
+										{
+											day: 'numeric',
+											month: 'short',
+										}
+								  )
 								: ''}{' '}
 							-{' '}
 							{bookingData.checkOutDate
-								? new Date(bookingData.checkOutDate).toLocaleDateString('en-GB', {
-										day: 'numeric',
-										month: 'short',
-								  })
+								? new Date(bookingData.checkOutDate).toLocaleDateString(
+										'en-GB',
+										{
+											day: 'numeric',
+											month: 'short',
+										}
+								  )
 								: ''}
 						</Typography>
 						{/* <Box
@@ -532,7 +529,11 @@ export default function RoomSelection({bookingData, setBookingData , onNext}) {
 				<Typography variant="h4" component="h2" gutterBottom>
 					Room Bundle for 2
 				</Typography>
-				<Typography variant="body1" color="rgba(255, 255, 255, 0.5)" gutterBottom>
+				<Typography
+					variant="body1"
+					color="rgba(255, 255, 255, 0.5)"
+					gutterBottom
+				>
 					Best value based on your group size.
 				</Typography>
 
@@ -642,7 +643,7 @@ export default function RoomSelection({bookingData, setBookingData , onNext}) {
 										<Typography
 											variant="body2"
 											color="rgba(255, 255, 255, 0.5)"
-											sx={{ mb: 'auto'  , px: 2 }}
+											sx={{ mb: 'auto', px: 2 }}
 										>
 											{room.description}
 										</Typography>
@@ -837,17 +838,17 @@ export default function RoomSelection({bookingData, setBookingData , onNext}) {
 				>
 					<Box>
 						<Typography variant="h6" gutterBottom>
-							Group Size: {groupSizeData.number_of_persons} people
+							Group Size: {bookingData.groupSize} people
 						</Typography>
 						<Typography variant="body2" color="text.secondary">
 							Selected capacity: {totalCapacity} people
 						</Typography>
 					</Box>
 					<Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-						{totalCapacity < groupSizeData.number_of_persons ? (
+						{totalCapacity < bookingData.groupSize ? (
 							<Alert severity="warning" sx={{ mb: 0 }}>
-								Minimum {groupSizeData.number_of_persons - totalCapacity} more
-								people need accommodation
+								Minimum {bookingData.groupSize - totalCapacity} more people need
+								accommodation
 							</Alert>
 						) : (
 							<Alert severity="success" sx={{ mb: 0 }}>
@@ -859,7 +860,7 @@ export default function RoomSelection({bookingData, setBookingData , onNext}) {
 							color="primary"
 							size="large"
 							onClick={handleNext}
-							disabled={totalCapacity < groupSizeData.number_of_persons}
+							disabled={totalCapacity < bookingData.groupSize}
 						>
 							Continue to Add-ons
 						</Button>
