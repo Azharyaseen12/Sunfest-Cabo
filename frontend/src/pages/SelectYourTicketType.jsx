@@ -26,8 +26,9 @@ export default function SelectYourTicketType({packageId, onNext}) {
         onNext()
     }
 
-    const handleDateSelect = (date) => {
-        setSelectedDate(date)
+    const handleDateSelect = ({day_id,ticket_id}) => {
+        setSelectedDate(day_id)
+        setSelectedTicket(ticket_id)
     }
 
     useEffect(() => {
@@ -129,8 +130,8 @@ export default function SelectYourTicketType({packageId, onNext}) {
                                     }}>
                                     {ticket?.inventory?.map((date) => (
                                         <Box 
-                                        key={date?.event_date?.id}
-                                        onClick={() => handleDateSelect(date?.event_date?.id)}
+                                        key={date?.id}
+                                        onClick={() => handleDateSelect({day_id:date?.id,ticket_id:date?.ticket_type?.id})}
                                         sx={{
                                             width: 40,
                                             height: 40,
@@ -141,14 +142,14 @@ export default function SelectYourTicketType({packageId, onNext}) {
                                             justifyContent: 'center',
                                             alignItems: 'center',
                                             cursor: 'pointer',
-                                            border: selectedDate === date?.event_date?.id ? '1px solid #F821DB' : 'none',
-                                            color: selectedDate === date?.event_date?.id ? '#F821DB' : 'white',
+                                            border: selectedDate === date?.id ? '1px solid #F821DB' : 'none',
+                                            color: selectedDate === date?.id ? '#F821DB' : 'white',
                                             '&:hover': {
                                             border: '1px solid #F821DB'
                                             }
                                         }}
                                         >
-                                        <Typography variant="body1" color={`${selectedDate === date?.event_date?.id ? '#F821DB' : 'white'}`} fontWeight="bold">{date?.event_day?.event_date.split("-")[2]}</Typography>
+                                        <Typography variant="body1" color={`${selectedDate === date?.id ? '#F821DB' : 'white'}`} fontWeight="bold">{date?.event_day?.event_date.split("-")[2]}</Typography>
                                         </Box>
                                         ))}
                                     </Box>
@@ -160,7 +161,7 @@ export default function SelectYourTicketType({packageId, onNext}) {
                                     fullWidth 
                                     sx={{ mt: 2 }}
                                     onClick={handleNext}
-                                    disabled={!(selectedTicket?.id === ticket.id && selectedDate)}
+                                    disabled={!(selectedTicket === ticket.id && selectedDate)}
                                 >
                                     Select
                                 </Button>
