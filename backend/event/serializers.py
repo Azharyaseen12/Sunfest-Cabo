@@ -197,6 +197,7 @@ class CartItemSerializer(serializers.ModelSerializer):
                     room_type=data["room_type"], stay_date=data["stay_date"]
                 )
                 data["item_id"] = inventory.id
+                # CHANGE: Use computed remaining_rooms property
                 if inventory.remaining_rooms < quantity:
                     raise serializers.ValidationError(
                         f"Insufficient rooms for {data['room_type'].room_type_name} on {data['stay_date']}: {inventory.remaining_rooms} available."
@@ -217,12 +218,15 @@ class CartItemSerializer(serializers.ModelSerializer):
             try:
                 if item_type == "ticket":
                     item = TicketInventory.objects.get(id=data["item_id"])
+                    # CHANGE: Use computed remaining_inventory property
                     remaining = item.remaining_inventory
                 elif item_type == "afterparty":
                     item = AfterParty.objects.get(id=data["item_id"])
+                    # CHANGE: Use computed remaining_capacity property
                     remaining = item.remaining_capacity
                 elif item_type == "addon":
                     item = AddOn.objects.get(id=data["item_id"])
+                    # CHANGE: Use computed remaining_inventory property
                     remaining = (
                         item.remaining_inventory
                         if item.total_inventory is not None
@@ -250,11 +254,11 @@ class CartSerializer(serializers.ModelSerializer):
     class Meta:
         model = Cart
         fields = ["id", "created_at", "expires_at", "items"]
+        read_only_fields = ["id", "created_at", "expires_at"]
 
     def validate(self, data):
         if not data.get("items"):
             raise serializers.ValidationError("Cart must contain at least one item.")
-        # Ensure at least one ticket item
         if not any(item["item_type"] == "ticket" for item in data["items"]):
             raise serializers.ValidationError("Cart must contain at least one ticket.")
         return data
@@ -285,38 +289,15 @@ class CartSerializer(serializers.ModelSerializer):
                 user=user, session_key=session_key, **validated_data
             )
 
-            # Process items
+            # Process items (no inventory deduction since computed at runtime)
             for item_data in items_data:
-                item_type = item_data["item_type"]
-                item_id = item_data["item_id"]
-                quantity = item_data["quantity"]
-
-                # Deduct inventory
-                if item_type == "ticket":
-                    item = TicketInventory.objects.select_for_update().get(id=item_id)
-                    item.remaining_inventory -= quantity
-                    item.save()
-                elif item_type == "room":
-                    item = RoomInventory.objects.select_for_update().get(id=item_id)
-                    item.remaining_rooms -= quantity
-                    item.save()
-                elif item_type == "afterparty":
-                    item = AfterParty.objects.select_for_update().get(id=item_id)
-                    item.remaining_capacity -= quantity
-                    item.save()
-                elif item_type == "addon":
-                    item = AddOn.objects.select_for_update().get(id=item_id)
-                    if item.total_inventory is not None:
-                        item.remaining_inventory -= quantity
-                        item.save()
-
                 CartItem.objects.create(
                     cart=cart,
-                    item_type=item_type,
-                    item_id=item_id,
+                    item_type=item_data["item_type"],
+                    item_id=item_data["item_id"],
                     room_type=item_data.get("room_type"),
                     stay_date=item_data.get("stay_date"),
-                    quantity=quantity,
+                    quantity=item_data["quantity"],
                 )
 
             return cart
@@ -366,18 +347,14 @@ class BookingSerializer(serializers.ModelSerializer):
                 "Total ticket quantity must equal party size."
             )
 
-        # Validate package hotel requirement
         package = Package.objects.get(id=data["package"].id)
         if package.is_hotel_required and not data.get("booking_rooms"):
             raise serializers.ValidationError(
                 "Package requires at least one hotel room."
             )
 
-        # Clean expired carts
         with transaction.atomic():
             Cart.objects.filter(expires_at__lte=timezone.now()).delete()
-
-            # Get active cart
             cart = (
                 Cart.objects.filter(
                     user=user, session_key=session_key, expires_at__gt=timezone.now()
@@ -397,7 +374,7 @@ class BookingSerializer(serializers.ModelSerializer):
                     key = f"{item.item_type}:{item.item_id}"
                 cart_items[key] = item.quantity
 
-            # Validate tickets
+            # CHANGE: Updated ticket validation to use computed remaining_inventory
             for ticket in data["booking_tickets"]:
                 ticket_type = ticket["ticket_type"]
                 event_day = ticket["event_day"]
@@ -406,6 +383,10 @@ class BookingSerializer(serializers.ModelSerializer):
                     inventory = TicketInventory.objects.get(
                         ticket_type=ticket_type, event_day=event_day
                     )
+                    if inventory.remaining_inventory < quantity:
+                        raise serializers.ValidationError(
+                            f"Insufficient ticket inventory for {ticket_type.ticket_name}: {inventory.remaining_inventory} available."
+                        )
                     key = f"ticket:{inventory.id}"
                     if key not in cart_items or cart_items[key] != quantity:
                         raise serializers.ValidationError(
@@ -416,31 +397,54 @@ class BookingSerializer(serializers.ModelSerializer):
                         f"Ticket inventory not found for {ticket_type.ticket_name}."
                     )
 
-            # Validate rooms
+            # CHANGE: Updated room validation to use computed remaining_rooms
             for room in data.get("booking_rooms", []):
                 room_type = room["room_type"]
                 stay_date = room["stay_date"]
                 quantity = room["quantity"]
-                key = f"room:{room_type.id}:{stay_date}"
-                if key not in cart_items or cart_items[key] != quantity:
+                try:
+                    inventory = RoomInventory.objects.get(
+                        room_type=room_type, stay_date=stay_date
+                    )
+                    if inventory.remaining_rooms < quantity:
+                        raise serializers.ValidationError(
+                            f"Insufficient rooms for {room_type.room_type_name} on {stay_date}: {inventory.remaining_rooms} available."
+                        )
+                    key = f"room:{room_type.id}:{stay_date}"
+                    if key not in cart_items or cart_items[key] != quantity:
+                        raise serializers.ValidationError(
+                            f"Room {room_type.room_type_name} for {stay_date} not in cart or quantity mismatch."
+                        )
+                except RoomInventory.DoesNotExist:
                     raise serializers.ValidationError(
-                        f"Room {room_type.room_type_name} for {stay_date} not in cart or quantity mismatch."
+                        f"Room inventory not found for {room_type.room_type_name} on {stay_date}."
                     )
 
-            # Validate afterparties
+            # CHANGE: Updated afterparty validation to use computed remaining_capacity
             for after_party in data.get("booking_after_parties", []):
                 after_party_obj = after_party["after_party"]
                 quantity = after_party["quantity"]
+                if after_party_obj.remaining_capacity < quantity:
+                    raise serializers.ValidationError(
+                        f"Insufficient capacity for {after_party_obj.after_party_type} on {after_party_obj.event_date}: {after_party_obj.remaining_capacity} available."
+                    )
                 key = f"afterparty:{after_party_obj.id}"
                 if key not in cart_items or cart_items[key] != quantity:
                     raise serializers.ValidationError(
                         f"Afterparty {after_party_obj.after_party_type} for {after_party_obj.event_date} not in cart or quantity mismatch."
                     )
 
-            # Validate add-ons
+            # CHANGE: Updated add-on validation to use computed remaining_inventory
             for add_on in data.get("booking_add_ons", []):
                 add_on_obj = add_on["add_on"]
                 quantity = add_on["quantity"]
+                if (
+                    add_on_obj.total_inventory is not None
+                    and add_on_obj.remaining_inventory < quantity
+                ):
+                    raise serializers.ValidationError(
+                        f"Insufficient inventory for {add_on_obj.add_on_name}: {add_on_obj.remaining_inventory} available."
+                    )
                 key = f"addon:{add_on_obj.id}"
                 if key not in cart_items or cart_items[key] != quantity:
                     raise serializers.ValidationError(
@@ -490,7 +494,7 @@ class BookingSerializer(serializers.ModelSerializer):
             validated_data.pop("after_party", None)  # Ignore redundant field
             booking = Booking.objects.create(**validated_data)
 
-            # Create booking items (inventory already deducted by cart)
+            # Create booking items
             for ticket_data in booking_tickets_data:
                 BookingTicket.objects.create(booking=booking, **ticket_data)
             for room_data in booking_rooms_data:

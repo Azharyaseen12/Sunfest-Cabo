@@ -162,32 +162,7 @@ class CartView(APIView):
                     status=status.HTTP_404_NOT_FOUND,
                 )
 
-            # Restore inventory
-            for item in cart.items.all():
-                if item.item_type == "ticket":
-                    inventory = TicketInventory.objects.select_for_update().get(
-                        id=item.item_id
-                    )
-                    inventory.remaining_inventory += item.quantity
-                    inventory.save()
-                elif item.item_type == "room":
-                    inventory = RoomInventory.objects.select_for_update().get(
-                        id=item.item_id
-                    )
-                    inventory.remaining_rooms += item.quantity
-                    inventory.save()
-                elif item.item_type == "afterparty":
-                    inventory = AfterParty.objects.select_for_update().get(
-                        id=item.item_id
-                    )
-                    inventory.remaining_capacity += item.quantity
-                    inventory.save()
-                elif item.item_type == "addon":
-                    inventory = AddOn.objects.select_for_update().get(id=item.item_id)
-                    if inventory.total_inventory is not None:
-                        inventory.remaining_inventory += item.quantity
-                        inventory.save()
-
+            # CHANGE: Removed inventory restoration logic since remaining_* are computed at runtime
             cart.delete()
             return Response(
                 {"detail": "Cart cleared."}, status=status.HTTP_204_NO_CONTENT
