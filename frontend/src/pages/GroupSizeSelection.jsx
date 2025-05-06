@@ -36,7 +36,6 @@ export default function GroupSizeSelection({packageId, onNext, setBookingData, b
 		setBookingData({
 			...bookingData, 
 			groupSize: selectedSize,
-			numberOfPersons: selectedGroup?.number_of_persons || 1,
 			totalPrice: (selectedGroup?.number_of_persons || 1) * (bookingData?.pricePerPerson || 0)
 		})
 		onNext()
