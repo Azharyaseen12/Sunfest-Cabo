@@ -162,7 +162,7 @@ const BookingStepper = () => {
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        minHeight: '100%',
+        minHeight: '80vh',
         mt: 16,
       }}>
         {/* Breadcrumbs - centered with max-width */}
