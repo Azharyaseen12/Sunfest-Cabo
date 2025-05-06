@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { useNavigate, useParams, Navigate, Link } from 'react-router-dom';
-import { Button, Box, Breadcrumbs, Typography } from '@mui/material';
+import { Link, useLocation } from 'react-router-dom';
+import { Box, Breadcrumbs, Typography } from '@mui/material';
 import ChevronRight from '@mui/icons-material/ChevronRight';
 
 import PackageSelection from './PackageSelection';
@@ -15,32 +15,25 @@ import Header from '../components/Header';
 import AfterPartySelection from './AfterPartySelection';
 
 const BookingStepper = () => {
-  const navigate = useNavigate();
   const [direction, setDirection] = useState('right');
-  const { eventId, event_date_id, packageId, step: currentStepPath } = useParams();
   const [bookingData, setBookingData] = useState({});
-  const [initialLoad, setInitialLoad] = useState(true);
+  const [currentStepIndex, setCurrentStepIndex] = useState(0);
+  const location = useLocation();
+  const packageId = location?.state?.packageId;
+  console.log("packageId" , packageId);
+  
+
+
+  console.log("Booking Data" , bookingData);
+  
 
   const steps = [
-    { 
-      path: 'packages', 
-      component: <PackageSelection 
-        packageId={packageId} 
-        onNext={() => navigateToStep(1)}
-        setBookingData={setBookingData} 
-        bookingData={bookingData}
-      />, 
-      title: 'Packages',
-      skipIfPackageId: true
-    },
     { 
       path: 'ticket-type', 
       component: <SelectYourTicketType 
         packageId={packageId} 
-         
-        
-        onNext={() => navigateToStep(2)}
-        onBack={() => navigateToStep(0)}
+        onNext={() => moveToStep(1)}
+        onBack={() => moveToStep(0)}
         setBookingData={setBookingData}
         bookingData={bookingData}
       />, 
@@ -50,10 +43,8 @@ const BookingStepper = () => {
       path: 'group-size', 
       component: <GroupSizeSelection 
         packageId={packageId} 
-         
-        
-        onNext={() => navigateToStep(3)}
-        onBack={() => navigateToStep(1)}
+        onNext={() => moveToStep(2)}
+        onBack={() => moveToStep(1)}
         setBookingData={setBookingData}
         bookingData={bookingData}
       />, 
@@ -62,14 +53,11 @@ const BookingStepper = () => {
     { 
       path: 'accommodation', 
       component: <AccommodationSelection 
-      packageId={packageId} 
-         
-        
-        onNext={() => navigateToStep(4)}
-        onBack={() => navigateToStep(2)}
+        packageId={packageId} 
+        onNext={() => moveToStep(3)}
+        onBack={() => moveToStep(2)}
         setBookingData={setBookingData}
         bookingData={bookingData}
-        
       />, 
       title: 'Accommodation' 
     },
@@ -77,10 +65,8 @@ const BookingStepper = () => {
       path: 'rooms', 
       component: <RoomSelection 
         packageId={packageId} 
-         
-        
-        onNext={() => navigateToStep(5)}
-        onBack={() => navigateToStep(3)}
+        onNext={() => moveToStep(4)}
+        onBack={() => moveToStep(3)}
         setBookingData={setBookingData}
         bookingData={bookingData}
       />, 
@@ -90,10 +76,8 @@ const BookingStepper = () => {
       path: 'add-ons', 
       component: <AddOnSelection 
         packageId={packageId} 
-         
-        
-        onNext={() => navigateToStep(6)}
-        onBack={() => navigateToStep(4)}
+        onNext={() => moveToStep(5)}
+        onBack={() => moveToStep(4)}
         bookingData={bookingData}
         setBookingData={setBookingData}
       />, 
@@ -103,10 +87,8 @@ const BookingStepper = () => {
       path: 'after-party', 
       component: <AfterPartySelection 
         packageId={packageId} 
-         
-        
-        onNext={() => navigateToStep(7)}
-        onBack={() => navigateToStep(5)}
+        onNext={() => moveToStep(6)}
+        onBack={() => moveToStep(5)}
         bookingData={bookingData}
         setBookingData={setBookingData}
       />,
@@ -116,9 +98,7 @@ const BookingStepper = () => {
       path: 'review', 
       component: <ReviewPackage 
         packageId={packageId} 
-         
-        
-        onBack={() => navigateToStep(5)}
+        onBack={() => moveToStep(5)}
         bookingData={bookingData}
         setBookingData={setBookingData}
       />, 
@@ -126,43 +106,31 @@ const BookingStepper = () => {
     },
   ];
 
-  //============================================================================= Get current step index
-  const currentStepIndex = steps.findIndex(step => step.path === currentStepPath);
-  
-  //============================================================================= Define current step
-  const currentStep = currentStepIndex >= 0 ? steps[currentStepIndex] : steps[0];
+  // Define current step
+  const currentStep = steps[currentStepIndex];
 
   useEffect(() => {
-    if (initialLoad && packageId && currentStepPath === 'packages' && steps[0].skipIfPackageId) {
-      //============================================================================= Skip the packages step if packageId is present on initial load
-      navigateToStep(1);
+    // If packageId exists on mount, skip to step 1
+    if (packageId && currentStepIndex === 0 && steps[0].skipIfPackageId) {
+      moveToStep(1);
     }
-    setInitialLoad(false);
-  }, [packageId, currentStepPath, initialLoad]);
+  }, [packageId]);
 
-  //============================================================================= Redirect to first step if invalid path
-  if (currentStepIndex === -1) {
-    const targetStep = packageId ? steps[1] : steps[0]; // Skip packages if packageId exists
-    return <Navigate to={`/events/${eventId}/packages/${event_date_id}/plane/${packageId}/booking/${targetStep.path}`} replace />;
-  }
-
-  //============================================================================= Navigate to step
-  const navigateToStep = (newIndex) => {
+  // Move between steps
+  const moveToStep = (newIndex) => {
     if (newIndex >= 0 && newIndex < steps.length) {
-      //============================================================================= Skip the packages step if packageId exists and we're trying to go to packages
+      // Skip the packages step if packageId exists and we're trying to go to packages
       if (newIndex === 0 && packageId && steps[0].skipIfPackageId) {
         return;
       }
       
       const newDirection = newIndex > currentStepIndex ? 'right' : 'left';
       setDirection(newDirection);
-      navigate(
-        `/events/${eventId}/packages/${event_date_id}/plane/${packageId}/booking/${steps[newIndex].path}`
-      );
+      setCurrentStepIndex(newIndex);
     }
   };
 
-  //============================================================================= Animation variants
+  // Animation variants
   const variants = {
     enter: (direction) => ({
       x: direction === 'right' ? 300 : -300,
@@ -180,91 +148,92 @@ const BookingStepper = () => {
 
   return (
     <>
-    <Header/>
-    <Box sx={{ 
-      width: '100%', 
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      minHeight: '100%',
-      mt: 16,
-    }}>
-      {/* Breadcrumbs - centered with max-width */}
+      <Header/>
       <Box sx={{ 
-        width: '100%',
-        maxWidth: '90%',
-      }}>
-        <Breadcrumbs
-          separator={<ChevronRight fontSize="small" sx={{ color: '#F821DB' }} />}
-        >
-          {steps.map((step, index) => {
-            //============================================================================= Skip showing packages in breadcrumbs if packageId exists and it's the packages step
-            if (packageId && step.skipIfPackageId && index > currentStepIndex) {
-              return null;
-            }
-            
-            if (index < currentStepIndex) {
-              return (
-                <Link
-                  key={step.path}
-                  to={`/events/${eventId}/packages/${event_date_id}/plane/${packageId}/booking/${step.path}`}
-                  style={{
-                    color: 'white',
-                    textDecoration: 'none',
-                  }}
-                >
-                  {step.title}
-                </Link>
-              );
-            } else if (index === currentStepIndex) {
-              return (
-                <Typography key={step.path} color="primary">
-                  {step.title}
-                </Typography>
-              );
-            } else {
-              return (
-                <Typography key={step.path} color="white">
-                  {step.title}
-                </Typography>
-              );
-            }
-          })}
-        </Breadcrumbs>
-      </Box>
-
-      {/* Current Step Content - takes full height and 90% width */}
-      <Box sx={{ 
-        width: '90%',
-        flex: 1,
-        position: 'relative',
+        width: '100%', 
         display: 'flex',
-        flexDirection: 'column'
+        flexDirection: 'column',
+        alignItems: 'center',
+        minHeight: '100%',
+        mt: 16,
       }}>
-        <AnimatePresence custom={direction} initial={false}>
-          <motion.div
-            key={currentStep.path}
-            custom={direction}
-            variants={variants}
-            initial="enter"
-            animate="center"
-            exit="exit"
-            transition={{ type: 'tween', ease: 'easeInOut', duration: 0.3 }}
-            style={{
-              width: '100%',
-              height: '100%',
-              position: 'relative',
-              display: 'flex',
-              flexDirection: 'column'
-            }}
+        {/* Breadcrumbs - centered with max-width */}
+        <Box sx={{ 
+          width: '100%',
+          maxWidth: '90%',
+        }}>
+          <Breadcrumbs
+            separator={<ChevronRight fontSize="small" sx={{ color: '#F821DB' }} />}
           >
-            <Box sx={{ flex: 1 }}>
-              {currentStep.component}
-            </Box>
-          </motion.div>
-        </AnimatePresence>
+            {steps.map((step, index) => {
+              // Skip showing packages in breadcrumbs if packageId exists and it's the packages step
+              if (packageId && step.skipIfPackageId && index > currentStepIndex) {
+                return null;
+              }
+              
+              if (index < currentStepIndex) {
+                return (
+                  <Typography
+                    key={step.path}
+                    onClick={() => moveToStep(index)}
+                    style={{
+                      color: 'white',
+                      textDecoration: 'none',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {step.title}
+                  </Typography>
+                );
+              } else if (index === currentStepIndex) {
+                return (
+                  <Typography key={step.path} color="primary">
+                    {step.title}
+                  </Typography>
+                );
+              } else {
+                return (
+                  <Typography key={step.path} color="white">
+                    {step.title}
+                  </Typography>
+                );
+              }
+            })}
+          </Breadcrumbs>
+        </Box>
+
+        {/* Current Step Content - takes full height and 90% width */}
+        <Box sx={{ 
+          width: '90%',
+          flex: 1,
+          position: 'relative',
+          display: 'flex',
+          flexDirection: 'column'
+        }}>
+          <AnimatePresence custom={direction} initial={false}>
+            <motion.div
+              key={currentStep.path}
+              custom={direction}
+              variants={variants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={{ type: 'tween', ease: 'easeInOut', duration: 0.3 }}
+              style={{
+                width: '100%',
+                height: '100%',
+                position: 'relative',
+                display: 'flex',
+                flexDirection: 'column'
+              }}
+            >
+              <Box sx={{ flex: 1 }}>
+                {currentStep.component}
+              </Box>
+            </motion.div>
+          </AnimatePresence>
+        </Box>
       </Box>
-    </Box>
     </>
   );
 };

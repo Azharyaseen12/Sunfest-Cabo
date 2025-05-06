@@ -13,11 +13,11 @@ import {
 import Header from '../components/Header'
 import { useEffect, useState } from 'react'
 import api from '../utils/api'
-import PackageCard from '../components/PackageCard' // Import the PackageCard component
+import PackageCard from '../components/PackageCard'
 import Logo from '../assets/images/SunsetFestLogo.svg'
 
 export default function EventDetails() {
-  const [packages,setPackages] = useState([])
+  const [packages, setPackages] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const navigate = useNavigate()
@@ -25,22 +25,22 @@ export default function EventDetails() {
   useEffect(() => {
     const fetchPackages = async () => {
       try {
-        setLoading(true);
-        const response = await api.get(`event/packages/`);
+        setLoading(true)
+        const response = await api.get(`event/packages/`)
         console.log(response.data)
-        setPackages(response.data); 
-        setError(null);
+        setPackages(response.data)
+        setError(null)
       } catch (error) {
-        console.error('Error fetching packages:', error);
-        setError('Failed to load packages. Please try again later.');
+        console.error('Error fetching packages:', error)
+        setError('Failed to load packages. Please try again later.')
       } finally {
-        setLoading(false);
+        setLoading(false)
       }
-    };
+    }
 
-    fetchPackages();  
-  }, []); 
-  
+    fetchPackages()
+  }, [])
+
   if (loading) {
     return (
       <Box className="min-h-screen bg-gray-50">
@@ -77,24 +77,31 @@ export default function EventDetails() {
     )
   }
 
-
-  // Function to check if a package is sold out
   const isPackageSoldOut = (pkg) => {
     return pkg.available_tickets === 0
   }
 
+  const handleScrollToPackages = () => {
+    window.scrollBy({
+      top: window.innerHeight - 100,
+      behavior: 'smooth'
+    })
+  }
+
   return (
-    <Box className="min-h-screen max-w-[1440px] mx-auto bg-transparent">
+    <Box className="min-h-screen bg-transparent">
       <Header />
-      <Box sx={{ pt: 8 }}>
+      <Box sx={{ pt: 8, maxWidth: '1440px', mx: 'auto', width: '100%' }}>
         {/* Hero Section */}
         <Box
           sx={{
             display: 'flex',
             flexDirection: { xs: 'column', md: 'row' },
-            minHeight: '70vh',
             color: 'white',
             bgcolor: 'transparent',
+            width: '100%',
+            px: { xs: 2, md: 4 },
+            minHeight : "88vh"
           }}
         >
           {/* Left Image */}
@@ -102,7 +109,6 @@ export default function EventDetails() {
             sx={{
               flex: 1,
               position: 'relative',
-              padding: { xs: 3, md: 6 },
               borderRadius: 4,
               overflow: 'hidden',
               display: 'flex',
@@ -111,8 +117,8 @@ export default function EventDetails() {
             }}
           >
             <img
-              className="w-[500px] h-[500px]"
               src={Logo}
+              alt="Event Logo"
             />
           </Box>
 
@@ -137,21 +143,18 @@ export default function EventDetails() {
                 mb: 3,
               }}
             >
-              Escape to <span style={{
-                color : "#F821DB"
-              }}>Cabo</span> for the Live Music Getaway
+              Escape to <span style={{ color: "#F821DB" }}>Cabo</span> for the Live Music Getaway
             </Typography>
             <Typography variant="body1" sx={{ mb: 4, color: 'white' }}>
-            Join us for an unforgettable experience in Cabo San Lucas — featuring world-class performances,
-             luxury accommodations, and thrilling excursions. Book your all-in-one package now.
+              Join us for an unforgettable experience in Cabo San Lucas — featuring world-class performances,
+              luxury accommodations, and thrilling excursions. Book your all-in-one package now.
             </Typography>
             <Typography
               variant="h4"
               sx={{
                 mb: 4,
                 fontWeight: 'bold',
-                background:
-                  'linear-gradient(to right,#F821DB,#B549D8,#8D7BB1, #5526FF)',
+                background: 'linear-gradient(to right,#F821DB,#B549D8,#8D7BB1, #5526FF)',
                 backgroundClip: 'text',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
@@ -163,9 +166,7 @@ export default function EventDetails() {
               variant="contained"
               color="primary"
               sx={{ width: '200px', height: '50px' }}
-              onClick={() => {
-                navigate('/events/booking')
-              }}
+              onClick={handleScrollToPackages}
             >
               View Packages
             </Button>
@@ -173,8 +174,14 @@ export default function EventDetails() {
         </Box>
 
         {/* Packages Section */}
-        <Container maxWidth="lg" sx={{ py: 8 }} id="packages-section">
-          {/* Packages Grid */}
+        <Box 
+          sx={{ 
+            py: 8, 
+            width: '100%',
+            px: { xs: 2, md: 4 }
+          }} 
+          id="packages-section"
+        >
           <Box
             sx={{
               display: 'grid',
@@ -183,13 +190,13 @@ export default function EventDetails() {
             }}
           >
             {packages?.flatMap((pkg) =>
-                <PackageCard
-                  key={pkg.id}
-                  pkg={pkg}
-                />
+              <PackageCard
+                key={pkg.id}
+                pkg={pkg}
+              />
             )}
           </Box>
-        </Container>
+        </Box>
       </Box>
     </Box>
   )

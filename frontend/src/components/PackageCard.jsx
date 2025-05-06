@@ -16,11 +16,12 @@ import { CircleCheck } from 'lucide-react'
 import { useState } from 'react'
 // import { useNavigate } from 'react-router'
 import Logo from '../assets/images/SunsetFestLogo.svg'
+import { useNavigate } from 'react-router'
   
-export default function PackageCard({ pkg, onNext = false , setBookingData , bookingData}) {
+export default function PackageCard({ pkg, handleNext = false ,onSelect}) {
 // const navigate = useNavigate()
 const [showAll, setShowAll] = useState(false)
-
+const navigate = useNavigate();
 
 // Function to check if a package is sold out
 const isPackageSoldOut = (pkg) => {
@@ -29,19 +30,13 @@ const isPackageSoldOut = (pkg) => {
 
 const isSoldOut = isPackageSoldOut(pkg)
 
-const handleButtonClick = () => {
-    if (isSoldOut) return;
-    
-    if (typeof(onNext) === 'function') {
-      console.log('PackageCard: Calling onNext prop function');
-      setBookingData({
-        ...bookingData,
-        packageId: pkg.id,
-        })
-      onNext();
+const handleButtonClick = () => {    
+    if (typeof handleNext === 'function') {
+      console.log('Selecting package:', pkg.id);
+      onSelect(pkg.id);
+      handleNext(); 
     } else {
-      console.log('PackageCard: Falling back to navigation');
-    //   navigate(`/events/${eventId}/packages/${event_date_id}/plane/${pkg.id}/booking/packages`);
+      navigate('/events/booking/', { state: { packageId: pkg.id } });
     }
   };
 

@@ -8,8 +8,11 @@ import {
 import api from '../utils/api'
 import PackageCard from '../components/PackageCard' 
 
-export default function PackageSelection({onNext,setBookingData,bookingData}) {
+export default function PackageSelection({onNext,setBookingData,bookingData,packageId}) {
+  console.log(packageId);
+  
   const [packages,setPackages] = useState([])
+  const [selectedPackageId,setSelectedPackageId] =useState(null)
   // const [loading, setLoading] = useState(true)
   // const [error, setError] = useState(null)  
   const [selectedDate, setSelectedDate] = useState(null)
@@ -32,6 +35,20 @@ export default function PackageSelection({onNext,setBookingData,bookingData}) {
 
     fetchPackages();  
   }, []); 
+
+  const handleNext = (packageId = selectedPackageId) => {
+    console.log("Selected package ID:", packageId);
+    
+    setBookingData(prev => ({
+      ...prev,
+      packageId: packageId || selectedPackageId
+    }));
+  
+    if (packageId || selectedPackageId) {
+      onNext();
+    }
+  };
+
   return (
     <Box className="min-h-screen bg-transparent text-white">
       <Container maxWidth="lg" sx={{ pt: 6, pb: 8 }}>
@@ -111,13 +128,15 @@ export default function PackageSelection({onNext,setBookingData,bookingData}) {
               gap: 4,
             }}
           >
-            {packages?.flatMap((pkg) =>
-                <PackageCard
-                  key={pkg.id}
-                  pkg={pkg}
-                  onNext={onNext}
-                />
-            )}
+          {packages?.map((pkg) => (
+            <PackageCard
+              key={pkg.id}
+              pkg={pkg}
+              handleNext={() => handleNext(pkg.id)} // Pass ID directly
+              isSelected={pkg.id === selectedPackageId}
+              onSelect={(id) => setSelectedPackageId(id)}
+            />
+          ))}
           </Box>
         </Container>
       </Container>
