@@ -125,7 +125,7 @@ export default function SelectYourTicketType({packageId, onNext, setBookingData 
                                 </Box>
                                 
                                 {/* Date Selector */}
-                                <Box sx={{ mb: 4 }}>
+                               {ticket?.inventory?.length > 0 && <Box sx={{ mb: 4 }}>
                                     <Typography variant="body1" fontSize={18} sx={{ mb: 2 }}>Select Date</Typography>
                                     <Box sx={{ 
                                         display: 'flex', 
@@ -179,7 +179,7 @@ export default function SelectYourTicketType({packageId, onNext, setBookingData 
                                     );
                                     })}
                                     </Box>
-                                </Box>
+                                </Box>}
                                 
                                 <Button 
                                     variant="contained" 
@@ -187,7 +187,7 @@ export default function SelectYourTicketType({packageId, onNext, setBookingData 
                                     fullWidth 
                                     sx={{ mt: 2 }}
                                     onClick={handleNext}
-                                    disabled={!(selectedTicket === ticket.id && selectedDate?.id)}
+                                    disabled={ticket?.inventory?.length > 0  && !(selectedTicket === ticket.id && selectedDate?.id)}
                                 >
                                     Select
                                 </Button>

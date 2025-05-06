@@ -36,7 +36,7 @@ const handleButtonClick = () => {
       onSelect(pkg.id);
       handleNext(); 
     } else {
-      navigate('/events/booking/', { state: { packageId: pkg.id } });
+      navigate('/events/booking/', { state: { packageId: pkg.id,pricePerPerson : pkg.starting_price } });
     }
   };
 
