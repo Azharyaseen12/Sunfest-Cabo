@@ -36,7 +36,7 @@ export default function AfterPartySelection({ packageId, onNext, setBookingData,
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await api.get(`event/after-parties/?after_party_type=${bookingData.after_party_type}`)
+        const response = await api.get(`event/after-parties/`)
         setAfterParties(response.data)
       } catch (error) {
         console.error('Error fetching after parties:', error)
