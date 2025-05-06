@@ -23,9 +23,10 @@ export default function AccommodationSelection({
 	onNext,
 	setBookingData,
 	bookingData,
+	onSkip
 }) {
 	const [accommodations, setAccommodations] = useState([])
-	const [selectedHotel, setSelectedHotel] = useState(null)
+	const [selectedHotel, setSelectedHotel] = useState(bookingData?.hotel || {})
 	const [dateDialogOpen, setDateDialogOpen] = useState(false)
 	const [checkInDate, setCheckInDate] = useState(null)
 	const [checkOutDate, setCheckOutDate] = useState(null)
@@ -105,6 +106,13 @@ export default function AccommodationSelection({
 		setSelectedHotel(hotel)
 		setDateDialogOpen(true)
 	}
+	const handleSkip = () => {
+		setBookingData(prev => ({
+			...prev,
+			hotel: null,
+		  }))
+		onSkip()
+	}
 
 	const handleDateDialogClose = () => {
 		setDateDialogOpen(false)
@@ -160,7 +168,7 @@ export default function AccommodationSelection({
 			checkInDate: checkInDate.toISOString(),
 			checkOutDate: checkOutDate.toISOString(),
 			nights: calculatedNights,
-			aId: accommodations[0].id,
+			hotel: accommodations[0],
 		}))
 		onNext()
 	}
@@ -271,11 +279,13 @@ export default function AccommodationSelection({
 										<Typography
 											variant="subtitle1"
 											color="rgba(255, 255, 255, 0.8)"
+											onClick={handleSkip}
 											sx={{
 												position: 'absolute',
 												bottom: 0,
 												right: 0,
 												cursor: 'pointer',
+												fontStyle : "italic"
 											}}
 										>
 											Skip

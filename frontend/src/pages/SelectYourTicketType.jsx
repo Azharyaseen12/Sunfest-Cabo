@@ -48,7 +48,8 @@ export default function SelectYourTicketType({ packageId, onNext, setBookingData
             ...prev,
             selectedTicket: ticket.id,
             selectedDate: selectedDate,
-            after_party_type : ticket.ticket_name
+            after_party_type : ticket.ticket_name,
+            ticketPrice: (parseFloat(ticket.price)).toFixed(2)
         }))
     }
     useEffect(() => {
