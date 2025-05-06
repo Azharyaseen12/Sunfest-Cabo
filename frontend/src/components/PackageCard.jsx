@@ -11,14 +11,17 @@ import {
     Typography,
     Box,
 } from '@mui/material'
+
 import { CircleCheck } from 'lucide-react'
 import { useState } from 'react'
+// import { useNavigate } from 'react-router'
+import Logo from '../assets/images/SunsetFestLogo.svg'
 import { useNavigate } from 'react-router'
   
-export default function PackageCard({ pkg, eventId, event_date_id, onNext = false , setBookingData , bookingData}) {
-const navigate = useNavigate()
+export default function PackageCard({ pkg, handleNext = false ,onSelect}) {
+// const navigate = useNavigate()
 const [showAll, setShowAll] = useState(false)
-
+const navigate = useNavigate();
 
 // Function to check if a package is sold out
 const isPackageSoldOut = (pkg) => {
@@ -27,19 +30,13 @@ const isPackageSoldOut = (pkg) => {
 
 const isSoldOut = isPackageSoldOut(pkg)
 
-const handleButtonClick = () => {
-    if (isSoldOut) return;
-    
-    if (typeof(onNext) === 'function') {
-      console.log('PackageCard: Calling onNext prop function');
-      setBookingData({
-        ...bookingData,
-        packageId: pkg.id,
-        })
-      onNext();
+const handleButtonClick = () => {    
+    if (typeof handleNext === 'function') {
+      console.log('Selecting package:', pkg.id);
+      onSelect(pkg.id);
+      handleNext(); 
     } else {
-      console.log('PackageCard: Falling back to navigation');
-      navigate(`/events/${eventId}/packages/${event_date_id}/plane/${pkg.id}/booking/packages`);
+      navigate('/events/booking/', { state: { packageId: pkg.id } });
     }
   };
 
@@ -84,25 +81,61 @@ return (
         >
         {/* Package Image */}
         <Box
-            sx={{
-            height: 190,
-            mb: 2,
+        sx={{
+            background : "rgba(255,255,255,0.1)",
             borderRadius: 2,
+            display : "flex",
+            alignItems:"center",
+            pt:1,
+            px:1,
+            gap:1,
+            mb:2,
+            height:190
+        }}>
+        <Box
+            sx={{
+            mb: 2,
             overflow: 'hidden',
             '& img': {
                 width: '100%',
                 height: '100%',
-                objectFit: 'cover',
+                objectFit: 'contain',
             },
+            width : "50%"
             }}
         >
             <img
-            src={
-                pkg.banner_image ??
-                'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4'
-            }
+            src={Logo}
             alt={pkg.title}
             />
+        </Box>
+        <Box sx={{
+            display : "flex",
+            flexDirection : "column",
+            gap : 1
+        }} >
+            <Typography
+              variant="h6"
+              sx={{
+                fontWeight: 'bold',
+                background:
+                  'linear-gradient(to right,#F821DB,#B549D8,#8D7BB1, #5526FF)',
+                backgroundClip: 'text',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+              }}
+            >
+              SUNSET FEST CABO
+            </Typography>
+            <Typography variant='body2' fontSize="12px" sx={{
+                color : "rgba(255,255,255,0.7)"
+            }}> 
+            OCTOBER 24th - 26th, 2025
+            </Typography>
+            <Typography variant='body1' fontSize="18px" fontWeight="bold">
+                {pkg?.package_name}
+            </Typography>
+        </Box>
         </Box>
 
         {/* Package Details */}
@@ -114,19 +147,21 @@ return (
             mb: 0,
             }}
         >
-            {pkg.title}
+            {pkg.package_name}
         </Typography>
+
         <Typography
             variant="subtitle2"
             sx={{
             mb: 4,
             mt: 0,
-            fontWeight: 'light',
             textAlign: 'center',
-            color: '#FFFFFFA8',
+            color:"rgba(255,255,255,0.8)",
             }}
+            fontWeight="10px"
+
         >
-            {pkg.description}
+           Hotel only package, concert ticket not included
         </Typography>
 
         {/* Price Display */}
@@ -135,7 +170,7 @@ return (
             color="white"
             sx={{ mb: 0, textAlign: 'center', fontWeight: 'bold' }}
         >
-            From ${parseFloat(pkg.price).toFixed(2)} USD
+            From ${parseFloat(pkg.starting_price).toFixed(2)} USD
             <Typography
             component="span"
             variant="body2"
@@ -158,7 +193,7 @@ return (
             color="#FFFFFFA8"
             sx={{ textAlign: 'center', fontWeight: 'light' }}
             >
-            ${parseFloat(pkg.price).toFixed(2) * 2} USD Total.
+            ${parseFloat(pkg.starting_price).toFixed(2) * 2} USD Total.
             (Taxes and fees included)
             </Typography>
             <Typography
@@ -181,44 +216,45 @@ return (
             >
             {isSoldOut ? 'Sold Out' : 'Select this Package'}
         </Button>
-
-        {/* Features */}
+        {/* features List */}
         <List sx={{ mb: 0, flexGrow: 1 }}>
-            {pkg.feature
-            ?.slice(0, showAll ? pkg.feature.length : 4)
+        {pkg?.features
+            ?.slice(0, showAll ? pkg.features.length : 4)
             .map((feature, index) => (
-                <ListItem key={index} sx={{ py: 0.5 }}>
+            <ListItem key={index} sx={{ py: 0.5 }}>
                 <ListItemIcon sx={{ minWidth: 32 }}>
-                    <CircleCheck size={16} color="#F821DB" />
+                <CircleCheck size={16} color="#F821DB" />
                 </ListItemIcon>
                 <ListItemText>
-                    <Typography
+                <Typography
                     sx={{
-                        color: '#FFFFFFA8',
-                        fontWeight: 'light',
-                        fontSize: '14px',
+                    color: '#FFFFFFA8',
+                    fontWeight: 'light',
+                    fontSize: '14px',
                     }}
-                    >
-                    {feature.name}
-                    </Typography>
+                >
+                    {feature?.feature_text}
+                </Typography>
                 </ListItemText>
-                </ListItem>
+            </ListItem>
             ))}
-            {pkg.feature?.length > 4 && !showAll && (
+        
+        {/* Show "View More" button if there are more than 4 features */}
+        {pkg.features?.length > 4 && !showAll && (
             <Button
-                onClick={() => setShowAll(true)}
-                sx={{
+            onClick={() => setShowAll(true)}
+            sx={{
                 color: '#F821DB',
                 textTransform: 'none',
                 fontSize: '16px',
                 mt: 1,
                 textAlign: 'center',
                 width: '100%',
-                }}
+            }}
             >
-                View More
+            View More
             </Button>
-            )}
+        )}
         </List>
         </CardContent>
     </Card>

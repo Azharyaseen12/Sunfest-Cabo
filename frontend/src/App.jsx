@@ -78,49 +78,19 @@ const globalStyles = {
 
 // Create a separate component for the app content
 function AppContent() {
-	const [firstEventId, setFirstEventId] = useState(null)
-	const dispatch = useDispatch()
-
-	useEffect(() => {
-		// Check auth status on app load
-		dispatch(checkAuth())
-
-		const fetchFirstEvent = async () => {
-			try {
-				const response = await api.get('events/events')
-				if (response.data && response.data.length > 0) {
-					setFirstEventId(response.data[0].id)
-				}
-			} catch (error) {
-				console.error('Error fetching first event:', error)
-			}
-		}
-
-		fetchFirstEvent()
-	}, [dispatch])
 
 	return (
 		<ThemeProvider theme={theme}>
 			<CssBaseline />
 			<GlobalStyles styles={globalStyles} />
 			<Routes>
-				<Route
-					path="/"
-					element={
-						firstEventId ? (
-							<Navigate to={`/events/${firstEventId}`} replace />
-						) : (
-							<div>Loading...</div>
-						)
-					}
-				/>
-				<Route path="/events/:eventId" element={<EventDetails />} />
+				<Route path="/" element={<EventDetails />}/>
 				<Route path="/verify-email/:token" element={<VerifyEmail />} />
 				<Route
 					path="/events/:eventId/packages"
 					element={<Navigate to="/events/:eventId" replace />}
 				/>
-				<Route
+				{/* <Route
 					path="/events/:eventId/packages/:event_date_id"
 					element={<PackageSelection />}
 				/>
@@ -148,9 +118,9 @@ function AppContent() {
 				<Route 
 					path="/events/:eventId/packages/:event_date_id/plane/:packageId/booking/:step" 
 					element={<BookingStepper />} 
-					/>
+					/> */}
 				<Route 
-					path="/events/:eventId/packages/:event_date_id/booking/:step" 
+					path="/events/booking/" 
 					element={<BookingStepper />} 
 					/>
 				<Route path="/booking-success" element={<BookingSuccess />} />
