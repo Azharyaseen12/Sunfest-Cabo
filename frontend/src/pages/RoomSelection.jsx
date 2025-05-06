@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router'
 import {
 	Box,
 	Container,
@@ -18,7 +17,6 @@ import {
 	ChevronLeft,
 	ChevronRight as ChevronRightIcon,
 } from 'lucide-react'
-import Header from '../components/Header'
 import api from '../utils/api'
 import { useDispatch, useSelector } from 'react-redux'
 import { setSelectedRooms } from '../store/slices/bookingSlice'
@@ -178,8 +176,12 @@ const Carousel = ({ alt }) => {
 	)
 }
 
-export default function RoomSelection({ bookingData, setBookingData, onNext }) {
-	const navigate = useNavigate()
+export default function RoomSelection({
+	bookingData,
+	setBookingData,
+	onNext,
+	onBack,
+}) {
 	const dispatch = useDispatch()
 	const { selectedRooms } = useSelector((state) => state.booking)
 	const [rooms, setRooms] = useState([])
@@ -187,12 +189,15 @@ export default function RoomSelection({ bookingData, setBookingData, onNext }) {
 	const [totalCapacity, setTotalCapacity] = useState(0)
 	const [error, setError] = useState(null)
 	const [loading, setLoading] = useState(true)
-	const checkInDate = new Date(bookingData.checkInDate)
-	const checkOutDate = new Date(bookingData.checkOutDate)
+	const [numberOfNights, setNumberOfNights] = useState(0)
 
 	useEffect(() => {
 		const fetchData = async () => {
-			if (!bookingData.groupSize || !checkInDate || !checkOutDate) {
+			if (
+				!bookingData.groupSize ||
+				!bookingData.checkInDate ||
+				!bookingData.checkOutDate
+			) {
 				setError('Invalid selection or missing dates')
 				setLoading(false)
 				return
@@ -202,9 +207,76 @@ export default function RoomSelection({ bookingData, setBookingData, onNext }) {
 				setLoading(true)
 				setError(null)
 
-				const roomsResponse = await api.get(`event/room-types`)
-				setRooms(roomsResponse.data)
+				const startDate = new Date(bookingData.checkInDate)
+				const endDate = new Date(bookingData.checkOutDate)
+				const nights = Math.max(
+					1,
+					Math.round((endDate - startDate) / (1000 * 60 * 60 * 24))
+				)
+				setNumberOfNights(nights)
 
+				// Fetch room inventory
+				const inventoryResponse = await api.get('event/room-inventory/')
+				const allInventory = inventoryResponse.data
+
+				// Process inventory data
+				const stayDates = []
+				for (let i = 0; i < nights; i++) {
+					const date = new Date(startDate)
+					date.setDate(startDate.getDate() + i)
+					stayDates.push(date.toISOString().split('T')[0])
+				}
+
+				const roomTypesMap = new Map()
+
+				allInventory.forEach((item) => {
+					if (stayDates.includes(item.stay_date)) {
+						const roomTypeId = item.room_type.id
+						if (!roomTypesMap.has(roomTypeId)) {
+							roomTypesMap.set(roomTypeId, {
+								id: roomTypeId,
+								room_type_name: item.room_type.room_type_name,
+								description: item.room_type.description,
+								capacity: item.room_type.capacity,
+								inventory: [],
+							})
+						}
+						roomTypesMap.get(roomTypeId).inventory.push({
+							stay_date: item.stay_date,
+							remaining_rooms: item.remaining_rooms,
+							price_per_night: parseFloat(item.price_per_night),
+						})
+					}
+				})
+
+				const availableRoomTypes = []
+				roomTypesMap.forEach((roomType) => {
+					// Check if room is available for all stay dates
+					if (roomType.inventory.length === nights) {
+						const min_remaining_rooms = Math.min(
+							...roomType.inventory.map((inv) => inv.remaining_rooms)
+						)
+						const total_price_for_stay = roomType.inventory.reduce(
+							(sum, inv) => sum + inv.price_per_night,
+							0
+						)
+						const average_price_per_night = total_price_for_stay / nights
+
+						if (min_remaining_rooms > 0) {
+							availableRoomTypes.push({
+								...roomType, // id, room_type_name, description, capacity
+								available_rooms: min_remaining_rooms,
+								price: average_price_per_night, // This is now avg price per night
+								// Storing total price for convenience if needed later, or it can be calculated on the fly
+								totalPriceForStay: total_price_for_stay,
+							})
+						}
+					}
+				})
+
+				setRooms(availableRoomTypes)
+
+				// Fetch hotel details (assuming this remains the same)
 				const accommodationResponse = await api.get(
 					`event/hotels/${bookingData.aId}`
 				)
@@ -212,7 +284,9 @@ export default function RoomSelection({ bookingData, setBookingData, onNext }) {
 			} catch (error) {
 				console.error('Error fetching data:', error)
 				if (error.response?.status === 404) {
-					setError('No rooms found. Please try again later.')
+					setError(
+						'No rooms found for the selected criteria or dates. Please try again later.'
+					)
 				} else {
 					setError('Failed to load data. Please try again later.')
 				}
@@ -264,6 +338,13 @@ export default function RoomSelection({ bookingData, setBookingData, onNext }) {
 		}
 
 		dispatch(setSelectedRooms(updatedSelectedRooms))
+
+		// Recalculate total capacity after updating selected rooms
+		const newTotalCapacity = updatedSelectedRooms.reduce(
+			(sum, selection) => sum + selection.room.capacity * selection.quantity,
+			0
+		)
+		setTotalCapacity(newTotalCapacity)
 	}
 
 	const handleQuantityChange = (room, newQuantity) => {
@@ -333,7 +414,6 @@ export default function RoomSelection({ bookingData, setBookingData, onNext }) {
 	if (loading) {
 		return (
 			<Box className="min-h-screen bg-transparent text-white">
-				<Header />
 				<Container maxWidth="xl" sx={{ pt: 12, pb: 8, textAlign: 'center' }}>
 					<Typography variant="h6">Loading room options...</Typography>
 				</Container>
@@ -344,16 +424,11 @@ export default function RoomSelection({ bookingData, setBookingData, onNext }) {
 	if (error) {
 		return (
 			<Box className="min-h-screen bg-transparent text-white">
-				<Header />
 				<Container maxWidth="xl" sx={{ pt: 12, pb: 8 }}>
 					<Alert severity="error" sx={{ mb: 4 }}>
 						{error}
 					</Alert>
-					<Button
-						variant="contained"
-						color="primary"
-						onClick={() => navigate(-1)}
-					>
+					<Button variant="contained" color="primary" onClick={onBack()}>
 						Go Back
 					</Button>
 				</Container>
@@ -364,16 +439,11 @@ export default function RoomSelection({ bookingData, setBookingData, onNext }) {
 	if (!bookingData.groupSize) {
 		return (
 			<Box className="min-h-screen bg-transparent text-white">
-				<Header />
 				<Container maxWidth="xl" sx={{ pt: 12, pb: 8 }}>
 					<Alert severity="error" sx={{ mb: 4 }}>
 						No group size selected. Please go back and select a group size.
 					</Alert>
-					<Button
-						variant="contained"
-						color="primary"
-						onClick={() => navigate(-1)}
-					>
+					<Button variant="contained" color="primary" onClick={onBack()}>
 						Go Back
 					</Button>
 				</Container>
@@ -399,10 +469,10 @@ export default function RoomSelection({ bookingData, setBookingData, onNext }) {
 				>
 					<Box>
 						<Typography variant="h4" component="h1" gutterBottom>
-							{hotel?.title || 'Loading...'}
+							{hotel?.hotel_name || 'Loading...'}
 						</Typography>
 						<Typography color="#FFFFFF80" gutterBottom>
-							3325 S Las Vegas Blvd, Las Vegas, NV 89109
+							{hotel?.address || 'Loading...'}
 						</Typography>
 						<Typography color="primary" gutterBottom>
 							{bookingData.checkInDate
@@ -425,83 +495,10 @@ export default function RoomSelection({ bookingData, setBookingData, onNext }) {
 								  )
 								: ''}
 						</Typography>
-						{/* <Box
-							sx={{
-								p: 2,
-								bgcolor: 'transparent',
-								borderRadius: 1,
-								boxShadow: 1,
-								display: 'flex',
-								gap: 2,
-								alignItems: 'center',
-							}}
-						>
-							<Box
-								sx={{
-									display: 'flex',
-									flexDirection: 'column',
-									gap: 0.5,
-								}}
-							>
-								<Typography variant="caption" color="white">
-									Check-in
-								</Typography>
-								<input
-									type="date"
-									value={checkInDate?.toISOString().split('T')[0] || ''}
-									disabled
-									style={{
-										width: '150px',
-										padding: '8px',
-										border: '1px solid #ccc',
-										borderRadius: '4px',
-										backgroundColor: 'transparent',
-										cursor: 'not-allowed',
-									}}
-								/>
-							</Box>
-							<Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-								<Typography variant="caption" color="white">
-									Check-out
-								</Typography>
-								<input
-									type="date"
-									value={checkOutDate?.toISOString().split('T')[0] || ''}
-									disabled
-									style={{
-										width: '150px',
-										padding: '8px',
-										border: '1px solid #ccc',
-										borderRadius: '4px',
-										backgroundColor: 'transparent',
-										cursor: 'not-allowed',
-									}}
-								/>
-							</Box>
-							<Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-								<Typography variant="caption" color="white">
-									Nights
-								</Typography>
-								<input
-									type="text"
-									value={nights}
-									disabled
-									style={{
-										width: '60px',
-										padding: '8px',
-										border: '1px solid #ccc',
-										borderRadius: '4px',
-										backgroundColor: 'transparent',
-										cursor: 'not-allowed',
-										textAlign: 'center',
-									}}
-								/>
-							</Box> 
-						</Box>*/}
 					</Box>
 					<Box>
 						<Rating
-							value={hotel?.rating || 5}
+							value={parseFloat(hotel?.rating) || 5}
 							color={'#F821DB'}
 							readOnly
 							sx={{ color: '#F821DB', fontSize: '2rem' }}
@@ -527,7 +524,7 @@ export default function RoomSelection({ bookingData, setBookingData, onNext }) {
 
 				{/* Room Options */}
 				<Typography variant="h4" component="h2" gutterBottom>
-					Room Bundle for 2
+					Room Options
 				</Typography>
 				<Typography
 					variant="body1"
@@ -536,6 +533,28 @@ export default function RoomSelection({ bookingData, setBookingData, onNext }) {
 				>
 					Best value based on your group size.
 				</Typography>
+
+				{/* Conditional Rendering for No Rooms Available */}
+				{!loading && !error && rooms.length === 0 && (
+					<Alert severity="info" sx={{ my: 4 }}>
+						<Typography variant="h6" component="p" gutterBottom>
+							No Rooms Available
+						</Typography>
+						<Typography variant="body1">
+							Unfortunately, there are no rooms available for your selected
+							check-in and check-out dates. Please try selecting different dates
+							or contact us for further assistance.
+						</Typography>
+						<Button
+							variant="outlined"
+							color="primary"
+							onClick={() => onBack()}
+							sx={{ mt: 2 }}
+						>
+							Change Dates
+						</Button>
+					</Alert>
+				)}
 
 				<Box
 					sx={{
@@ -599,7 +618,7 @@ export default function RoomSelection({ bookingData, setBookingData, onNext }) {
 													// room.images[0] ??
 													'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4'
 												}
-												alt={room.title}
+												alt={room.room_type_name}
 											/>
 										</Box>
 										<Box
@@ -613,32 +632,8 @@ export default function RoomSelection({ bookingData, setBookingData, onNext }) {
 											}}
 										>
 											<Typography variant="h6" component="h3">
-												{room.title}
+												{room.room_type_name}
 											</Typography>
-											{/* <Box
-												sx={{
-													display: 'flex',
-													flexDirection: 'column',
-													alignItems: 'flex-end',
-													gap: 1,
-												}}
-											>
-												<Chip
-													label={`Capacity: ${room.capacity} people`}
-													color={isSelected ? 'primary' : 'default'}
-													size="small"
-												/>
-												<Chip
-													label={`Available: ${room.available_rooms} rooms`}
-													color={room.available_rooms > 0 ? 'success' : 'error'}
-													size="small"
-												/>
-												<Chip
-													label={`Bed: ${room.bed_type}`}
-													color="default"
-													size="small"
-												/>
-											</Box> */}
 										</Box>
 										<Typography
 											variant="body2"
@@ -662,7 +657,7 @@ export default function RoomSelection({ bookingData, setBookingData, onNext }) {
 														color="white"
 														sx={{ ml: 1 }}
 													>
-														/ Person
+														/ Night
 													</Typography>
 												</Typography>
 												<Typography
@@ -671,10 +666,13 @@ export default function RoomSelection({ bookingData, setBookingData, onNext }) {
 													color="rgba(255, 255, 255, 0.8)"
 													paragraph
 												>
-													${parseFloat(room.price * 2).toFixed(2)} USD Total
-													(Taxes and fees included)
+													$
+													{(parseFloat(room.price) * numberOfNights).toFixed(2)}{' '}
+													USD Total for {numberOfNights} night(s)
 													<br />
-													*Price shown based on 2 people
+													(Taxes and fees included)
+													{room.capacity &&
+														` *Room price based on single occupancy. Total may vary.`}
 												</Typography>
 											</Box>
 											{isSelected ? (
@@ -784,14 +782,14 @@ export default function RoomSelection({ bookingData, setBookingData, onNext }) {
 									justifyContent: 'space-between',
 									alignItems: 'center',
 									py: 1,
-									borderBottom: '1px solid',
-									borderColor: 'divider',
 								}}
 							>
 								<Typography>
-									{room.title} × {quantity}
+									{room.room_type_name} × {quantity}
 								</Typography>
-								<Typography>${(room.price * quantity).toFixed(2)}</Typography>
+								<Typography>
+									${(room.price * quantity * numberOfNights).toFixed(2)}
+								</Typography>
 							</Box>
 						))}
 						<Box
@@ -810,7 +808,8 @@ export default function RoomSelection({ bookingData, setBookingData, onNext }) {
 								$
 								{selectedRooms
 									.reduce(
-										(sum, { room, quantity }) => sum + room.price * quantity,
+										(sum, { room, quantity }) =>
+											sum + room.price * quantity * numberOfNights,
 										0
 									)
 									.toFixed(2)}
