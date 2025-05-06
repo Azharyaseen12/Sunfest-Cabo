@@ -1,7 +1,11 @@
 from django.db import models
 from django.core.validators import MinValueValidator
 from django.db.models import CheckConstraint, Q, F
+from django.utils import timezone
 import uuid
+from django.contrib.auth import get_user_model
+
+USER = get_user_model()
 
 
 # Package model
@@ -434,3 +438,53 @@ class BookingAfterParty(models.Model):
         self.after_party.remaining_capacity -= self.quantity
         self.after_party.save()
         super().save(*args, **kwargs)
+
+
+# Cart model
+class Cart(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(USER, on_delete=models.CASCADE, null=True, blank=True)
+    session_key = models.CharField(max_length=32, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+
+    class Meta:
+        db_table = "carts"
+        verbose_name = "Cart"
+        verbose_name_plural = "Carts"
+        indexes = [models.Index(fields=["user", "session_key", "expires_at"])]
+
+    def save(self, *args, **kwargs):
+        if not self.expires_at:
+            self.expires_at = timezone.now() + timezone.timedelta(minutes=10)
+        super().save(*args, **kwargs)
+
+
+# CartItem model
+class CartItem(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    cart = models.ForeignKey(Cart, on_delete=models.CASCADE, related_name="items")
+    item_type = models.CharField(
+        max_length=20,
+        choices=[
+            ("ticket", "Ticket"),
+            ("room", "Room"),
+            ("afterparty", "AfterParty"),
+            ("addon", "AddOn"),
+        ],
+    )
+    item_id = models.UUIDField()
+    room_type = models.ForeignKey(
+        RoomType, on_delete=models.CASCADE, null=True, blank=True
+    )
+    stay_date = models.DateField(null=True, blank=True)
+    quantity = models.PositiveIntegerField(validators=[MinValueValidator(1)])
+
+    class Meta:
+        db_table = "cart_items"
+        verbose_name = "Cart Item"
+        verbose_name_plural = "Cart Items"
+        indexes = [models.Index(fields=["cart", "item_type", "item_id"])]
+
+    def __str__(self):
+        return f"Cart {self.cart.id} - {self.item_type} {self.item_id} x{self.quantity}"

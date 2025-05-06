@@ -11,6 +11,7 @@ from .views import (
     AddOnViewSet,
     BookingViewSet,
     AfterPartyViewSet,
+    CartView,
 )
 
 router = DefaultRouter()
@@ -29,4 +30,5 @@ router.register(r"after-parties", AfterPartyViewSet, basename="after-party")
 
 urlpatterns = [
     path("", include(router.urls)),
+    path("cart/", CartView.as_view(), name="cart"),
 ]
