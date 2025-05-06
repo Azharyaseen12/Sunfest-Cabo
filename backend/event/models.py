@@ -59,23 +59,11 @@ class TicketType(models.Model):
     ticket_name = models.CharField(max_length=50)
     price = models.DecimalField(max_digits=10, decimal_places=2)
     description = models.TextField(blank=True, null=True)
-    total_inventory = models.PositiveIntegerField()
-    remaining_inventory = models.PositiveIntegerField()
 
     class Meta:
         db_table = "ticket_types"
         verbose_name = "Ticket Type"
         verbose_name_plural = "Ticket Types"
-        constraints = [
-            CheckConstraint(
-                check=Q(remaining_inventory__lte=F("total_inventory")),
-                name="ticket_type_remaining_inventory_lte_total",
-            ),
-            CheckConstraint(
-                check=Q(remaining_inventory__gte=0),
-                name="ticket_type_remaining_inventory_gte_zero",
-            ),
-        ]
 
     def __str__(self):
         return f"{self.ticket_name} ({self.package.package_name})"
