@@ -13,22 +13,19 @@ import {
 } from '@mui/material'
 
 export default function GroupSizeSelection({packageId, onNext, setBookingData, bookingData}) {
-	const [selectedSize, setSelectedSize] = useState(null)
+	const [selectedSize, setSelectedSize] = useState(bookingData?.groupSize || 1)
 	const [groups, setGroups] = useState([])
 
 	// Default group sizes from 1 to 8
 	const defaultGroupSizes = Array.from({length: 8}, (_, i) => ({
 		id: i+1,
 		number_of_persons: i+1,
-		base_price: bookingData?.pricePerPerson || 0 // Use price from bookingData or default to 0
+		base_price: bookingData?.pricePerPerson || 0
 	}))
 
 	useEffect(() => {
 		// Set default groups
 		setGroups(defaultGroupSizes)
-		
-		// Set default selected size to 1 (smallest group)
-		setSelectedSize(1)
 	}, [packageId, bookingData])
 
 	const handleNext = () => {
@@ -36,7 +33,8 @@ export default function GroupSizeSelection({packageId, onNext, setBookingData, b
 		setBookingData({
 			...bookingData, 
 			groupSize: selectedSize,
-			totalPrice: (selectedGroup?.number_of_persons || 1) * (bookingData?.pricePerPerson || 0)
+			totalPrice: ((selectedGroup?.number_of_persons || 1) * parseFloat(bookingData.pricePerPerson)) + 
+            ((selectedGroup?.number_of_persons || 1) * parseFloat(bookingData?.afterParty?.price_per_person || 0))
 		})
 		onNext()
 	}

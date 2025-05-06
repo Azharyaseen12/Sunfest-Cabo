@@ -47,7 +47,8 @@ export default function SelectYourTicketType({ packageId, onNext, setBookingData
         setBookingData(prev => ({
             ...prev,
             selectedTicket: ticket.id,
-            selectedDate: selectedDate
+            selectedDate: selectedDate,
+            after_party_type : ticket.ticket_name
         }))
     }
     useEffect(() => {
@@ -122,8 +123,14 @@ export default function SelectYourTicketType({ packageId, onNext, setBookingData
                                     flexDirection: "column",
                                     justifyContent: "space-between",
                                     gap: 1,
-                                    width : "32%"
-                                }}
+                                    width : "32%",
+                                    border: selectedTicket === ticket.id && '2px solid #F821DB',
+                                    '&:hover': {
+                                        borderColor: selectedTicket === ticket.id? 'primary.main' : '#FFFFFF80',
+                                        transform: 'translateY(-2px)',
+                                        boxShadow: '0 4px 8px rgba(0,0,0,0.2)'
+                                    },
+                                    }}
                             >
                                 <Typography variant="h4" component="h2" gutterBottom>
                                     {ticket.ticket_name} Admission
