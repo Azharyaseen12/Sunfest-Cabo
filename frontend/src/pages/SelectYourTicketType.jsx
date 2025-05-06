@@ -16,18 +16,24 @@ import { ChevronRight } from 'lucide-react'
 import Header from '../components/Header'
 import api from '../utils/api'
 
-export default function SelectYourTicketType({packageId, onNext}) {
+export default function SelectYourTicketType({packageId, onNext, setBookingData ,bookingData}) {
     const navigate = useNavigate()
     const [selectedTicket, setSelectedTicket] = useState(null)
-    const [selectedDate, setSelectedDate] = useState(null)
+    const [selectedDate, setSelectedDate] = useState({})
     const [ticketTypes, setTicketTypes] = useState([])
 
     const handleNext = () => {
-        onNext()
+        onNext();
+        setBookingData(prev => ({
+            ...prev,
+            selectedTicket: selectedTicket,
+            selectedDate : selectedDate
+        }))
     }
 
-    const handleDateSelect = (date) => {
-        setSelectedDate(date)
+    const handleDateSelect = ({day,ticket_id}) => {
+        setSelectedDate(day)
+        setSelectedTicket(ticket_id)
     }
 
     useEffect(() => {
@@ -127,30 +133,51 @@ export default function SelectYourTicketType({packageId, onNext}) {
                                         gap: 3,
                                         flexWrap: 'wrap'
                                     }}>
-                                    {ticket?.inventory?.map((date) => (
+                                    {ticket?.inventory?.map((date) => {
+                                    const isDisabled = !(date?.remaining_inventory > 0);
+                                    const isSelected = selectedDate?.id === date?.id;
+                                    
+                                    return (
                                         <Box 
-                                        key={date?.event_date?.id}
-                                        onClick={() => handleDateSelect(date?.event_date?.id)}
+                                        key={date?.id}
+                                        onClick={() => !isDisabled && handleDateSelect({day: date, ticket_id: date?.ticket_type?.id})}
                                         sx={{
                                             width: 40,
                                             height: 40,
                                             borderRadius: '50%',
-                                            bgcolor: 'rgba(255, 255, 255, 0.1)',
+                                            bgcolor: isDisabled ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.1)',
                                             display: 'flex',
                                             flexDirection: 'column',
                                             justifyContent: 'center',
                                             alignItems: 'center',
-                                            cursor: 'pointer',
-                                            border: selectedDate === date?.event_date?.id ? '1px solid #F821DB' : 'none',
-                                            color: selectedDate === date?.event_date?.id ? '#F821DB' : 'white',
+                                            cursor: isDisabled ? 'not-allowed' : 'pointer',
+                                            border: isSelected ? '1px solid #F821DB' : 'none',
+                                            color: isDisabled 
+                                            ? 'rgba(255, 255, 255, 0.5)' 
+                                            : isSelected 
+                                                ? '#F821DB' 
+                                                : 'white',
                                             '&:hover': {
-                                            border: '1px solid #F821DB'
-                                            }
+                                            border: !isDisabled && '1px solid #F821DB'
+                                            },
+                                            opacity: isDisabled ? 0.6 : 1
                                         }}
                                         >
-                                        <Typography variant="body1" color={`${selectedDate === date?.event_date?.id ? '#F821DB' : 'white'}`} fontWeight="bold">{date?.event_day?.event_date.split("-")[2]}</Typography>
+                                        <Typography 
+                                            variant="body1" 
+                                            color={isDisabled 
+                                            ? 'rgba(255, 255, 255, 0.5)' 
+                                            : isSelected 
+                                                ? '#F821DB' 
+                                                : 'white'
+                                            } 
+                                            fontWeight="bold"
+                                        >
+                                            {date?.event_day?.event_date.split("-")[2]}
+                                        </Typography>
                                         </Box>
-                                        ))}
+                                    );
+                                    })}
                                     </Box>
                                 </Box>
                                 
@@ -160,7 +187,7 @@ export default function SelectYourTicketType({packageId, onNext}) {
                                     fullWidth 
                                     sx={{ mt: 2 }}
                                     onClick={handleNext}
-                                    disabled={!(selectedTicket?.id === ticket.id && selectedDate)}
+                                    disabled={!(selectedTicket === ticket.id && selectedDate?.id)}
                                 >
                                     Select
                                 </Button>
