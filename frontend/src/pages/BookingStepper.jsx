@@ -20,9 +20,17 @@ const BookingStepper = () => {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const location = useLocation();
   const packageId = location?.state?.packageId;
-  console.log("packageId" , packageId);
-  
+  const pricePerPerson = location?.state?.pricePerPerson;
 
+  console.log("packageId" , packageId);
+
+  useEffect(() => {
+    setBookingData(prev => ({
+      ...prev,
+      packageId: packageId,
+      pricePerPerson : pricePerPerson
+  }))
+  },[pricePerPerson,packageId])
 
   console.log("Booking Data" , bookingData);
   
@@ -40,11 +48,22 @@ const BookingStepper = () => {
       title: 'Ticket Type' 
     },
     { 
-      path: 'group-size', 
-      component: <GroupSizeSelection 
+      path: 'after-party', 
+      component: <AfterPartySelection 
         packageId={packageId} 
         onNext={() => moveToStep(2)}
         onBack={() => moveToStep(1)}
+        bookingData={bookingData}
+        setBookingData={setBookingData}
+      />,
+      title: 'After Party'
+    },
+    { 
+      path: 'group-size', 
+      component: <GroupSizeSelection 
+        packageId={packageId} 
+        onNext={() => moveToStep(3)}
+        onBack={() => moveToStep(2)}
         setBookingData={setBookingData}
         bookingData={bookingData}
       />, 
@@ -54,8 +73,8 @@ const BookingStepper = () => {
       path: 'accommodation', 
       component: <AccommodationSelection 
         packageId={packageId} 
-        onNext={() => moveToStep(3)}
-        onBack={() => moveToStep(2)}
+        onNext={() => moveToStep(4)}
+        onBack={() => moveToStep(3)}
         setBookingData={setBookingData}
         bookingData={bookingData}
       />, 
@@ -65,8 +84,8 @@ const BookingStepper = () => {
       path: 'rooms', 
       component: <RoomSelection 
         packageId={packageId} 
-        onNext={() => moveToStep(4)}
-        onBack={() => moveToStep(3)}
+        onNext={() => moveToStep(5)}
+        onBack={() => moveToStep(4)}
         setBookingData={setBookingData}
         bookingData={bookingData}
       />, 
@@ -76,23 +95,12 @@ const BookingStepper = () => {
       path: 'add-ons', 
       component: <AddOnSelection 
         packageId={packageId} 
-        onNext={() => moveToStep(5)}
-        onBack={() => moveToStep(4)}
-        bookingData={bookingData}
-        setBookingData={setBookingData}
-      />, 
-      title: 'Add-ons' 
-    },
-    { 
-      path: 'after-party', 
-      component: <AfterPartySelection 
-        packageId={packageId} 
         onNext={() => moveToStep(6)}
         onBack={() => moveToStep(5)}
         bookingData={bookingData}
         setBookingData={setBookingData}
-      />,
-      title: 'After Party'
+      />, 
+      title: 'Add-ons' 
     },
     { 
       path: 'review', 

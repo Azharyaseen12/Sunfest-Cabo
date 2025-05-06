@@ -11,55 +11,35 @@ import {
 	Stack,
 	Tooltip,
 } from '@mui/material'
-import api from '../utils/api'
 
 export default function GroupSizeSelection({packageId, onNext, setBookingData, bookingData}) {
 	const [selectedSize, setSelectedSize] = useState(null)
 	const [groups, setGroups] = useState([])
-	const [pricingPlan, setPricingPlan] = useState(null)
 
-	console.log("bookingData in GroupSizeSelection", bookingData)
+	// Default group sizes from 1 to 8
+	const defaultGroupSizes = Array.from({length: 8}, (_, i) => ({
+		id: i+1,
+		number_of_persons: i+1,
+		base_price: bookingData?.pricePerPerson || 0 // Use price from bookingData or default to 0
+	}))
 
 	useEffect(() => {
-		const fetchData = async () => {
-			try {
-				// Fetch group sizes
-				const groupsResponse = await api.get(
-					`events/group-sizes?pricing_plan_id=${packageId}`
-				)
-				setGroups(groupsResponse.data)
+		// Set default groups
+		setGroups(defaultGroupSizes)
+		
+		// Set default selected size to 1 (smallest group)
+		setSelectedSize(1)
+	}, [packageId, bookingData])
 
-				// Fetch pricing plan details to get available tickets
-				const planResponse = await api.get(`events/pricing-plans/${packageId}`)
-				setPricingPlan(planResponse.data)
-
-				// Set default selected size to the first available group size
-				if (groupsResponse.data.length > 0) {
-					const firstAvailableGroup = groupsResponse.data.find(
-						(group) =>
-							group.number_of_persons <= planResponse.data.available_tickets
-					)
-					if (firstAvailableGroup) {
-						setSelectedSize(firstAvailableGroup.id)
-					}
-				}
-			} catch (error) {
-				console.error('Error fetching data:', error)
-			}
-		}
-
-		fetchData()
-	}, [packageId])
-
-	// Function to check if a group size is available
-	const isGroupSizeAvailable = (group) => {
-		if (!pricingPlan) return false
-		return group.number_of_persons <= pricingPlan.available_tickets
-	}
 	const handleNext = () => {
+		const selectedGroup = groups.find(group => group.id === selectedSize)
+		setBookingData({
+			...bookingData, 
+			groupSize: selectedSize,
+			numberOfPersons: selectedGroup?.number_of_persons || 1,
+			totalPrice: (selectedGroup?.number_of_persons || 1) * (bookingData?.pricePerPerson || 0)
+		})
 		onNext()
-		console.log("selectedSize", selectedSize)
-		setBookingData({...bookingData, groupSize: selectedSize})
 	}
 
 	return (
@@ -90,147 +70,141 @@ export default function GroupSizeSelection({packageId, onNext, setBookingData, b
 					>
 						<RadioGroup
 							value={selectedSize}
-							onChange={(e) => setSelectedSize(e.target.value)}
+							onChange={(e) => setSelectedSize(parseInt(e.target.value))}
 							sx={{
 								width: '100%',
-								maxWidth: 600,
+								maxWidth: 650, // Increased max width
 								display: 'flex',
 								justifyContent: 'center',
 								alignItems: 'center',
 							}}
 						>
 							<Stack spacing={2}>
-								{groups?.map((group) => {
-									const isAvailable = isGroupSizeAvailable(group)
-									return (
-										<Tooltip
-											key={group.id}
-											title={
-												!isAvailable
-													? `Only ${pricingPlan?.available_tickets} tickets available`
-													: ''
-											}
-											placement="right"
-										>
-											<span>
-												<FormControlLabel
-													value={group.id}
-													control={
-														<Radio
-														  sx={{
+								{groups?.map((group) => (
+									<Tooltip
+										key={group.id}
+										title=""
+										placement="right"
+									>
+										<span>
+											<FormControlLabel
+												value={group.id}
+												control={
+													<Radio
+														sx={{
 															'& .MuiSvgIcon-root': {
-															  backgroundColor: 'white',
-															  borderRadius: '50%',
-															  border: '2px solid #D2691E',
+																backgroundColor: 'white',
+																borderRadius: '50%',
+																border: '2px solid #D2691E',
 															},
 															'&.Mui-checked .MuiSvgIcon-root': {
-															  borderColor: 'primary.main',
+																borderColor: 'primary.main',
 															},
-														  }}
-														/>
-													  }
-													  
-													label={
+														}}
+													/>
+												}
+												label={
+													<Box
+														sx={{
+															width: '100%',
+															p: 3,
+															border: '2px solid',
+															borderColor:
+																selectedSize === group.id
+																	? 'primary.main'
+																	: 'divider',
+															borderRadius: 2,
+															bgcolor: '#FFFFFF12',
+															transition: 'all 0.3s',
+															'&:hover': {
+																borderColor: selectedSize === group.id ? 'primary.main' : '#FFFFFF80',
+																transform: 'translateY(-2px)',
+																boxShadow: '0 4px 8px rgba(0,0,0,0.2)'
+															},
+															minWidth: '500px' // Increased card width
+														}}
+													>
 														<Box
 															sx={{
+																display: 'flex',
+																justifyContent: 'space-between',
+																alignItems: 'center',
 																width: '100%',
-																p: 3,
-																border: '2px solid',
-																borderColor:
-																	selectedSize === group.id
-																		? 'primary.main'
-																		: 'divider',
-																borderRadius: 2,
-																bgcolor: '#FFFFFF12',
-																transition: 'border-color 0.3s',
-																opacity: isAvailable ? 1 : 0.5,
 															}}
 														>
-															<Box
+															<Typography
+																variant="h6"
 																sx={{
-																	display: 'flex',
-																	justifyContent: 'space-between',
-																	alignItems: 'center',
-																	width: '100%', // Ensure full width
-																	minWidth: '400px', // Set minimum width
+																	mr: 2,
+																	flex: '0 0 auto',
+																	color:
+																		selectedSize === group.id
+																			? 'primary.main'
+																			: 'white',
 																}}
 															>
-																<Typography
-																	variant="h6"
-																	sx={{
-																		mr: 2,
-																		flex: '0 0 auto',
-																		color:
-																			selectedSize === group.id
-																				? 'primary.main'
-																				: 'white',
-																	}}
-																>
-																	{group.number_of_persons}{' '}
-																	{group.number_of_persons === 1
-																		? 'Person'
-																		: 'People'}
-																</Typography>
-																<Box
-																	sx={{
-																		textAlign: 'right',
-																		flex: '0 0 auto',
-																		color:
-																			selectedSize === group.id
-																				? 'primary.main'
-																				: 'white',
-																	}}
-																>
-																	<Typography variant="h6">
-																		From $
-																		{parseFloat(group.base_price).toFixed(2)}{' '}
-																		USD
-																		<Typography
-																			component="span"
-																			variant="body2"
-																			sx={{ ml: 1 }}
-																		>
-																			/ Person
-																		</Typography>
-																	</Typography>
-																	<Typography variant="body2">
-																		$
-																		{(
-																			group.number_of_persons *
-																			parseFloat(group.base_price)
-																		).toFixed(2)}{' '}
-																		USD Total
-																	</Typography>
+																{group.number_of_persons}{' '}
+																{group.number_of_persons === 1
+																	? 'Person'
+																	: 'People'}
+															</Typography>
+															<Box
+																sx={{
+																	textAlign: 'right',
+																	flex: '0 0 auto',
+																	color:
+																		selectedSize === group.id
+																			? 'primary.main'
+																			: 'white',
+																}}
+															>
+																<Typography variant="h6">
+																	From $
+																	{parseFloat(bookingData?.pricePerPerson || 0).toFixed(2)}{' '}
+																	USD
 																	<Typography
-																		variant="caption"
-																		color="#FFFFFF80"
+																		component="span"
+																		variant="body2"
+																		sx={{ ml: 1 }}
 																	>
-																		(Taxes and Fees Included)
+																		/ Person
 																	</Typography>
-																</Box>
+																</Typography>
+																<Typography variant="body2">
+																	$
+																	{(
+																		group.number_of_persons *
+																		parseFloat(bookingData?.pricePerPerson || 0)
+																	).toFixed(2)}{' '}
+																	USD Total
+																</Typography>
+																<Typography
+																	variant="caption"
+																	color="#FFFFFF80"
+																>
+																	(Taxes and Fees Included)
+																</Typography>
 															</Box>
 														</Box>
-													}
-													sx={{
-														alignItems: 'center',
-														margin: 0,
-
-														'& .MuiRadio-root': {
-															left: 20,
-															top: '50%',
-															zIndex: 1,
-															color: 'white',
-															'&.Mui-checked': {
-																color: '#F821DB',
-															},
+													</Box>
+												}
+												sx={{
+													alignItems: 'center',
+													margin: 0,
+													'& .MuiRadio-root': {
+														left: 20,
+														top: '50%',
+														zIndex: 1,
+														color: 'white',
+														'&.Mui-checked': {
+															color: '#F821DB',
 														},
-													}}
-													disabled={!isAvailable}
-												/>
-											</span>
-										</Tooltip>
-									)
-								})}
+													},
+												}}
+											/>
+										</span>
+									</Tooltip>
+								))}
 							</Stack>
 						</RadioGroup>
 					</Box>
