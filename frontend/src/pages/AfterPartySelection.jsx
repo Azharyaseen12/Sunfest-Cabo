@@ -34,8 +34,7 @@ const StyledDateCircle = styled(Box)(({ selected, theme }) => ({
   }
 }))
 
-export default function AfterPartySelection({ eventId, event_date_id, packageId, onNext }) {
-  const navigate = useNavigate()
+export default function AfterPartySelection({packageId, onNext, setBookingData, bookingData}) {
   const [selectedSize, setSelectedSize] = useState(null)
   const [selectedDate, setSelectedDate] = useState(null)
   const [groups, setGroups] = useState([])
@@ -70,7 +69,7 @@ export default function AfterPartySelection({ eventId, event_date_id, packageId,
         )
         setGroups(groupsResponse.data)
 
-        const planResponse = await api.get(`events/pricing-plans/${packageId}`)
+        const planResponse = await api.get(`event/after-parties`)
         setPricingPlan(planResponse.data)
 
         if (groupsResponse.data.length > 0) {

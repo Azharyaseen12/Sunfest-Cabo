@@ -18,14 +18,7 @@ export default function SelectYourTicketType({ packageId, onNext, setBookingData
     const [selectedDate, setSelectedDate] = useState(bookingData?.selectedDate || null)
     const [ticketTypes, setTicketTypes] = useState([])
 
-    const handleNext = () => {
-        onNext();
-        setBookingData(prev => ({
-            ...prev,
-            selectedTicket: selectedTicket,
-            selectedDate: selectedDate
-        }))
-    }
+
 
     const handleDateSelect = (date, ticketId) => {
         setSelectedDate(date)
@@ -39,12 +32,24 @@ export default function SelectYourTicketType({ packageId, onNext, setBookingData
 
     //============================ Check if current ticket is selected with proper date (if needed)
     const isTicketSelectable = (ticket) => {
+        console.log("Selected Ticket :" , selectedTicket);
+        console.log("Ticket :" , ticket.id);
+        console.log("selectedDate :" , selectedDate);
+        
         if (hasOneDayInventory(ticket)) {
+
             return selectedTicket === ticket.id && selectedDate?.id
         }
-        return selectedTicket === ticket.id
+        return true
     }
-
+    const handleNext = (ticket) => {
+        onNext();
+        setBookingData(prev => ({
+            ...prev,
+            selectedTicket: ticket.id,
+            selectedDate: selectedDate
+        }))
+    }
     useEffect(() => {
         const fetchInventories = async () => {
             try {
@@ -197,7 +202,7 @@ export default function SelectYourTicketType({ packageId, onNext, setBookingData
                                     color="primary" 
                                     fullWidth 
                                     sx={{ mt: 2 }}
-                                    onClick={handleNext}
+                                    onClick={() => handleNext(ticket)}
                                     disabled={!isTicketSelectable(ticket)}
                                 >
                                     Select
