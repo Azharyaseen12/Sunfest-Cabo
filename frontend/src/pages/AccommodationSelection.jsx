@@ -152,133 +152,133 @@ export default function AccommodationSelection() {
 			<Container maxWidth="lg" sx={{ pt: 6, pb: 8 }}>
 				{/* Main Content */}
 				{accommodations && accommodations.length > 0 ? (
-					<Box sx={{ maxWidth: 1200, mx: 'auto' }}>
-						<Typography variant="h5" component="h4" gutterBottom>
-							Choose Your Accommodation
-						</Typography>
+				<Box sx={{ maxWidth: { xs: '100%', md: 1200 }, mx: 'auto' }}>
+					<Typography
+					variant="h5"
+					component="h4"
+					gutterBottom
+					sx={{ fontSize: { xs: '1.5rem', md: '1.75rem' } }}
+					>
+					Choose Your Accommodation
+					</Typography>
 
-						<Box sx={{ mt: 2 }}>
+					<Box sx={{ mt: 2 }}>
+					<Box
+						sx={{
+						backgroundColor: 'rgba(255, 255, 255, 0.13)',
+						borderRadius: 2,
+						overflow: 'hidden',
+						boxShadow: 3,
+						}}
+					>
+						<Box sx={{ p: { xs: 2, md: 3 } }}>
+						<Box
+							sx={{
+							width: '100%',
+							maxHeight: { xs: '400px', md: '600px' }, // Smaller height on mobile
+							position: 'relative',
+							}}
+						>
+							<img
+							src={Hotel}
+							alt={accommodations[0]?.hotel_name || 'Hotel'}
+							style={{ width: '100%', height: 'auto', objectFit: 'cover' }} // Ensure image scales
+							/>
+						</Box>
+						<Box
+							sx={{
+							width: '100%',
+							p: { xs: 2, md: 4 },
+							display: 'flex',
+							flexDirection: 'column',
+							justifyContent: 'space-between',
+							position: 'relative',
+							}}
+						>
+							<Box>
 							<Box
 								sx={{
-									backgroundColor: 'rgba(255, 255, 255, 0.13)',
-									borderRadius: 2,
-									overflow: 'hidden',
-									boxShadow: 3,
+								display: 'flex',
+								alignItems: 'flex-start',
+								gap: 2,
+								justifyContent: 'space-between',
+								flexWrap: { xs: 'wrap', md: 'nowrap' }, // Wrap on small screens
 								}}
 							>
-								<Box sx={{ p: 3 }}>
-									<Box
-										sx={{
-											width: { xs: '100%' },
-											maxHeight: { xs: '600px' },
-											position: 'relative',
-										}}
-									>
-										<img
-											src={Hotel}
-											alt={accommodations[0]?.hotel_name || 'Hotel'}
-										/>
-									</Box>
-									<Box
-										sx={{
-											width: { xs: '100%' },
-											p: 4,
-											display: 'flex',
-											flexDirection: 'column',
-											justifyContent: 'space-between',
-											position: 'relative',
-										}}
-									>
-										<Box>
-											<Box
-												sx={{
-													display: 'flex',
-													alignItems: 'flex-start',
-													gap: 2,
-													justifyContent: 'space-between',
-												}}
-											>
-												<Typography
-													variant="h4"
-													component="h2"
-													color="white"
-													gutterBottom
-												>
-													{accommodations[0]?.hotel_name}
-												</Typography>
-												<Rating
-													value={parseFloat(accommodations[0]?.rating) || 0}
-													color={'#F821DB'}
-													readOnly
-													sx={{ color: '#F821DB', fontSize: '2rem' }}
-												/>
-											</Box>
-
-											<Typography
-												variant="subtitle1"
-												color="rgba(255, 255, 255, 0.8)"
-											>
-												{accommodations[0]?.address}
-											</Typography>
-											<Typography
-												variant="body2"
-												color="rgba(255, 255, 255, 0.5)"
-												sx={{ mt: 3, mb: 2 }}
-											>
-												{accommodations[0]?.description}
-												{/* **The Venetian Resort has a standard Las Vegas Resort Fee
-												of $62.36 inclusive of tax per night, payable upon
-												check-in as well as $150 incidental hold per night. The
-												iconic resort experience is marked by a commitment to
-												sophisticated play and light-hearted luxury, with
-												world-class restaurants from celebrated chefs; the
-												rejuvenating Canyon Ranch spa + fitness; a five-acre pool
-												and garden deck inspired by the Italian Riviera including
-												TAO Beach Dayclub, a Balinese-inspired tropical oasis; two
-												landmark casinos and a poker room and unparalleled retail
-												experiences at Grand Canal Shoppes. */}
-											</Typography>
-										</Box>
-
-										<Button
-											variant="contained"
-											color="primary"
-											onClick={() => handleSelectHotel(accommodations[0])}
-											sx={{ mt: 2, mx: 'auto', width: '400px' }}
-											disabled={!accommodations || accommodations.length === 0}
-										>
-											Next
-										</Button>
-
-										<Typography
-											variant="subtitle1"
-											color="rgba(255, 255, 255, 0.8)"
-											onClick={handleSkip}
-											sx={{
-												position: 'absolute',
-												bottom: 0,
-												right: 0,
-												cursor: 'pointer',
-												fontStyle : "italic"
-											}}
-										>
-											Skip
-										</Typography>
-									</Box>
-								</Box>
+								<Typography
+								variant="h4"
+								component="h2"
+								color="white"
+								gutterBottom
+								sx={{ fontSize: { xs: '1.5rem', md: '2rem' } }}
+								>
+								{accommodations[0]?.hotel_name}
+								</Typography>
+								<Rating
+								value={parseFloat(accommodations[0]?.rating) || 0}
+								color={'#F821DB'}
+								readOnly
+								sx={{ color: '#F821DB', fontSize: { xs: '1.5rem', md: '2rem' } }}
+								/>
 							</Box>
+
+							<Typography
+								variant="subtitle1"
+								color="rgba(255, 255, 255, 0.8)"
+								sx={{ fontSize: { xs: '0.9rem', md: '1rem' } }}
+							>
+								{accommodations[0]?.address}
+							</Typography>
+							<Typography
+								variant="body2"
+								color="rgba(255, 255, 255, 0.5)"
+								sx={{ mt: 3, mb: 2, fontSize: { xs: '0.85rem', md: '0.875rem' } }}
+							>
+								{accommodations[0]?.description}
+							</Typography>
+							</Box>
+
+							<Button
+							variant="contained"
+							color="primary"
+							onClick={() => handleSelectHotel(accommodations[0])}
+							sx={{ mt: 2, mx: 'auto', width: { xs: '100%', md: '400px' } }} // Responsive button width
+							disabled={!accommodations || accommodations.length === 0}
+							>
+							Next
+							</Button>
+
+							<Typography
+							variant="subtitle1"
+							color="rgba(255, 255, 255, 0.8)"
+							onClick={handleSkip}
+							sx={{
+								position: 'absolute',
+								bottom: { xs: '-20px', md: 0 }, // Adjust position for small screens
+								right: { xs: 10, md: 0 },
+								cursor: 'pointer',
+								fontStyle: "italic",
+								fontSize: { xs: '0.9rem', md: '1rem' },
+							}}
+							>
+							Skip
+							</Typography>
+						</Box>
 						</Box>
 					</Box>
+					</Box>
+				</Box>
 				) : (
-					<Typography
-						variant="h6"
-						color="white"
-						textAlign="center"
-						sx={{ mt: 4 }}
-					>
-						Loading accommodations or no accommodations available...
-					</Typography>
+				<Typography
+					variant="h6"
+					color="white"
+					textAlign="center"
+					sx={{ mt: 4, fontSize: { xs: '1rem', md: '1.25rem' } }}
+				>
+					Loading accommodations or no accommodations available...
+				</Typography>
 				)}
+
 
 				{/* Date Selection Dialog */}
 				<LocalizationProvider dateAdapter={AdapterDateFns}>
