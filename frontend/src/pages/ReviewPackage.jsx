@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams, useLocation } from 'react-router'
+import PayPalButton from './PayPalButton'
+import StripeButton from './StripeButton'
 import {
 	Box,
 	Container,
@@ -17,7 +19,7 @@ import api from '../utils/api'
 import { useSelector } from 'react-redux'
 import { toast } from 'react-toastify'
 
-export default function ReviewPackage({bookingData,setBookingData,onNext,eventId,event_date_id,packageId}) {
+export default function ReviewPackage() {
 	const location = useLocation()
 
 	const [event, setEvent] = useState(null)
@@ -345,134 +347,133 @@ export default function ReviewPackage({bookingData,setBookingData,onNext,eventId
 						</Card>
 						{/* Package Information */}
 						<Card
-							sx={{
-								mb: 4,
-								overflow: 'visible',
-								bgcolor: 'rgba(255, 255, 255, 0.2)',
-								borderRadius: 3,
-							}}
+						sx={{
+							mb: 4,
+							overflow: 'visible',
+							bgcolor: 'rgba(255, 255, 255, 0.2)',
+							borderRadius: 3,
+						}}
 						>
-							<Box sx={{ p: 3 }}>
-								<Typography
-									variant="h5"
-									gutterBottom
-									color="white"
-									align="center"
-								>
-									Package Information
+						<Box sx={{ p: 3 }}>
+							<Typography
+							variant="h5"
+							gutterBottom
+							color="white"
+							align="center"
+							>
+							Package Information
+							</Typography>
+							<Box sx={{ display: 'flex', gap: 3, mt: 3 }}>
+							<CardMedia
+								component="img"
+								sx={{ width: 120, height: 120, borderRadius: 1 }}
+								image={
+								bookingData?.event?.images?.[0]?.image ||
+								'https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?q=80&w=2067&auto=format&fit=crop'
+								}
+								alt={bookingData?.event?.title}
+							/>
+							<Box>
+								<Typography variant="h6" color="white">
+								{bookingData?.event?.title || 'Event Title'}
 								</Typography>
-								<Box sx={{ display: 'flex', gap: 3, mt: 3 }}>
-									<CardMedia
-										component="img"
-										sx={{ width: 120, height: 120, borderRadius: 1 }}
-										image={
-											event?.images?.[0]?.image ||
-											'https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?q=80&w=2067&auto=format&fit=crop'
-										}
-										alt={event?.title}
-									/>
-									<Box>
-										<Typography variant="h6" color="white">
-											{event?.title || 'Loading...'}
-										</Typography>
-										<Typography color="primary" sx={{ mt: 1 }}>
-											{formatDates(event?.start_date, event?.end_date)}
-										</Typography>
-										<Typography color="white">
-											{event?.location || 'Las Vegas, NV'}
-										</Typography>
-										<Box
-											sx={{
-												display: 'flex',
-												justifyContent: 'space-between',
-												alignItems: 'center',
-												mt: 2,
-												color: 'white',
-											}}
-										>
-											<Typography>
-												{pricingPlan?.title || 'VIP Package'} for {groupSizeNum}{' '}
-												{groupSizeNum === 1 ? 'person' : 'people'}
-											</Typography>
-											<Button
-												variant="text"
-												color="primary"
-												endIcon={<ChevronRight size={16} />}
-												component={Link}
-												to={`/events/${eventId}/packages/${event_date_id}`}
-											>
-												Change
-											</Button>
-										</Box>
-									</Box>
+								<Typography color="primary" sx={{ mt: 1 }}>
+								{formatDates(bookingData?.selectedDate?.event_day?.date, bookingData?.selectedDate?.event_day?.date) || 'N/A'}
+								</Typography>
+								<Typography color="white">
+								{bookingData?.event?.location || 'Unknown Location'}
+								</Typography>
+								<Box
+								sx={{
+									display: 'flex',
+									justifyContent: 'space-between',
+									alignItems: 'center',
+									mt: 2,
+									color: 'white',
+								}}
+								>
+								<Typography>
+									{bookingData?.selectedTicket ? 'Selected Package' : 'Package'} for {bookingData?.groupSize || 1} {bookingData?.groupSize === 1 ? 'person' : 'people'}
+								</Typography>
+								<Button
+									variant="text"
+									color="primary"
+									endIcon={<ChevronRight size={16} />}
+									component={Link}
+									to={`/events/${eventId}/packages/${event_date_id}`}
+								>
+									Change
+								</Button>
 								</Box>
 							</Box>
+							</Box>
+						</Box>
 						</Card>
 
 						{/* Hotel Information */}
-						<Card
-							sx={{
-								mb: 4,
-								overflow: 'visible',
-								bgcolor: 'rgba(255, 255, 255, 0.2)',
-								borderRadius: 3,
-							}}
+				        <Card
+						sx={{
+							mb: 4,
+							overflow: 'visible',
+							bgcolor: 'rgba(255, 255, 255, 0.2)',
+							borderRadius: 3,
+						}}
 						>
-							<Box sx={{ p: 3 }}>
-								<Typography
-									variant="h5"
-									gutterBottom
-									color="white"
-									align="center"
-								>
-									Hotel Information
+						<Box sx={{ p: 3 }}>
+							<Typography
+							variant="h5"
+							gutterBottom
+							color="white"
+							align="center"
+							>
+							Hotel Information
+							</Typography>
+							<Box sx={{ display: 'flex', gap: 3, mt: 3 }}>
+							<CardMedia
+								component="img"
+								sx={{ width: 120, height: 120, borderRadius: 1 }}
+								image={
+								bookingData?.hotel?.images?.[0]?.image ||
+								'https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=2070&auto=format&fit=crop'
+								}
+								alt={bookingData?.hotel?.hotel_name}
+							/>
+							<Box sx={{ flex: 1 }}>
+								<Typography variant="h6" color="white">
+								{bookingData?.hotel?.hotel_name || 'Hotel Name'}
 								</Typography>
-								<Box sx={{ display: 'flex', gap: 3, mt: 3 }}>
-									<CardMedia
-										component="img"
-										sx={{ width: 120, height: 120, borderRadius: 1 }}
-										image={
-											accommodation?.images?.[0]?.image ||
-											'https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=2070&auto=format&fit=crop'
-										}
-										alt={accommodation?.title}
-									/>
-									<Box sx={{ flex: 1 }}>
-										<Typography variant="h6" color="white">
-											{accommodation?.title || 'Loading...'}
-										</Typography>
-										<Typography color="primary">
-											{accommodation?.location || 'Las Vegas, NV'}
-										</Typography>
-										<Box
-											sx={{
-												display: 'flex',
-												justifyContent: 'space-between',
-												alignItems: 'end',
-												mt: 2,
-											}}
-										>
-											<Box>
-												<Typography color="white">Selected Rooms:</Typography>
-												{rooms.map((room) => (
-													<Typography key={room.id} color="white">
-														{room.title} (${room.price})
-													</Typography>
-												))}
-											</Box>
-											<Button
-												variant="text"
-												color="primary"
-												endIcon={<ChevronRight size={16} />}
-												component={Link}
-												to={`/events/${eventId}/packages/${event_date_id}/plane/${packageId}/group-size/${groupSize}/accommodation/${aId}/rooms`}
-											>
-												Change
-											</Button>
-										</Box>
-									</Box>
+								<Typography color="primary">
+								{bookingData?.hotel?.address || 'Unknown Address'}
+								</Typography>
+								<Box
+								sx={{
+									display: 'flex',
+									justifyContent: 'space-between',
+									alignItems: 'end',
+									mt: 2,
+								}}
+								>
+								<Box>
+									<Typography color="white">Selected Rooms:</Typography>
+									{bookingData?.selectedRooms?.map((room) => (
+									<Typography key={room.id} color="white">
+										{room.title} (${room.price}) x {bookingData.roomQuantities[room.id] || 1}
+									</Typography>
+									))}
+								</Box>
+								<Button
+									variant="text"
+									color="primary"
+									endIcon={<ChevronRight size={16} />}
+									component={Link}
+									to={`/events/${eventId}/packages/${event_date_id}/plane/${packageId}/group-size/${bookingData?.groupSize}/accommodation/${bookingData?.hotel?.id}/rooms`}
+								>
+									Change
+								</Button>
 								</Box>
 							</Box>
+							</Box>
+						</Box>
 						</Card>
 						{/* Hotel Information */}
 						<Card
@@ -585,91 +586,85 @@ export default function ReviewPackage({bookingData,setBookingData,onNext,eventId
 						</Card>
 
 						{/* Add-ons Information */}
-						{addOns.length > 0 && (
-							<Card
+						{bookingData?.selectedAddOns?.length > 0 && (
+						<Card
+							sx={{
+							mb: 4,
+							overflow: 'visible',
+							bgcolor: 'rgba(255, 255, 255, 0.2)',
+							borderRadius: 3,
+							}}
+						>
+							<Box sx={{ p: 3 }}>
+							<Typography
+								variant="h5"
+								color="white"
+								gutterBottom
+								align="center"
+							>
+								Selected Add-ons
+							</Typography>
+							{bookingData.selectedAddOns.map((addon, index) => {
+								const totalPrice =
+								addon.totalPrice ||
+								addon.quantity * (addon.timeSlot?.price_override || addon.addOn?.price || 0);
+
+								return (
+								<Box
+									key={`${addon.addOn?.id}-${index}`}
+									sx={{
+									display: 'flex',
+									justifyContent: 'space-between',
+									alignItems: 'center',
+									py: 2,
+									borderBottom:
+										index < bookingData.selectedAddOns.length - 1 ? '1px solid' : 'none',
+									borderColor: 'divider',
+									}}
+								>
+									<Box>
+									<Typography variant="subtitle1" color="white">
+										{addon.addOn?.title || 'Add-on'}
+									</Typography>
+									{addon.timeSlots?.map((slot, slotIndex) => (
+										<Typography
+										key={slotIndex}
+										variant="body2"
+										color="white"
+										>
+										{new Date(slot.start_time).toLocaleTimeString([], {
+											hour: '2-digit',
+											minute: '2-digit',
+										})}{' '}
+										- {slot.quantity} spots
+										</Typography>
+									))}
+									</Box>
+									<Typography variant="subtitle1" color="primary">
+									${totalPrice.toFixed(2)} USD
+									</Typography>
+								</Box>
+								);
+							})}
+							<Box
 								sx={{
-									mb: 4,
-									overflow: 'visible',
-									bgcolor: 'rgba(255, 255, 255, 0.2)',
-									borderRadius: 3,
+								display: 'flex',
+								justifyContent: 'flex-end',
+								mt: 2,
 								}}
 							>
-								<Box sx={{ p: 3 }}>
-									<Typography
-										variant="h5"
-										color="white"
-										gutterBottom
-										align="center"
-									>
-										Selected Add-ons
-									</Typography>
-									{addOns.map((addon, index) => {
-										const totalPrice =
-											addon.totalPrice ||
-											addon.quantity *
-												(addon.timeSlot?.price_override ||
-													addon.addOn?.price ||
-													0)
-
-										return (
-											<Box
-												key={`${addon.addOn?.id}-${index}`}
-												sx={{
-													display: 'flex',
-													justifyContent: 'space-between',
-													alignItems: 'center',
-													py: 2,
-													borderBottom:
-														index < addOns.length - 1 ? '1px solid' : 'none',
-													borderColor: 'divider',
-												}}
-											>
-												<Box>
-													<Typography variant="subtitle1" color="white">
-														{addon.addOn?.title}
-													</Typography>
-													{addon.timeSlots?.map((slot, slotIndex) => (
-														<Typography
-															key={slotIndex}
-															variant="body2"
-															color="white"
-														>
-															{new Date(slot.start_time).toLocaleTimeString(
-																[],
-																{
-																	hour: '2-digit',
-																	minute: '2-digit',
-																}
-															)}{' '}
-															- {slot.quantity} spots
-														</Typography>
-													))}
-												</Box>
-												<Typography variant="subtitle1" color="primary">
-													${totalPrice.toFixed(2)} USD
-												</Typography>
-											</Box>
-										)
-									})}
-									<Box
-										sx={{
-											display: 'flex',
-											justifyContent: 'flex-end',
-											mt: 2,
-										}}
-									>
-										<Button
-											variant="text"
-											color="primary"
-											endIcon={<ChevronRight size={16} />}
-											component={Link}
-											to={`/events/${eventId}/packages/${event_date_id}/plane/${packageId}/group-size/${groupSize}/accommodation/${aId}/rooms/${roomIds}/add-ons`}
-										>
-											Change
-										</Button>
-									</Box>
-								</Box>
-							</Card>
+								<Button
+								variant="text"
+								color="primary"
+								endIcon={<ChevronRight size={16} />}
+								component={Link}
+								to={`/events/${eventId}/packages/${event_date_id}/plane/${packageId}/group-size/${bookingData?.groupSize}/accommodation/${bookingData?.hotel?.id}/rooms/${bookingData?.roomIdsWithQuantities}/add-ons`}
+								>
+								Change
+								</Button>
+							</Box>
+							</Box>
+						</Card>
 						)}
 					</Box>
 
@@ -677,110 +672,141 @@ export default function ReviewPackage({bookingData,setBookingData,onNext,eventId
 					<Box sx={{ flex: '1 1 40%' }}>
 						<Card
 							sx={{
-								position: 'sticky',
-								top: 100,
-								bgcolor: 'rgba(255, 255, 255, 0.2)',
-								borderRadius: 3,
+							position: 'sticky',
+							top: 100,
+							bgcolor: 'rgba(255, 255, 255, 0.2)',
+							borderRadius: 3,
 							}}
 						>
 							<Box sx={{ p: 3 }}>
-								<Typography
-									variant="h5"
-									gutterBottom
-									color="white"
-									align="center"
+							<Typography
+								variant="h5"
+								gutterBottom
+								color="white"
+								align="center"
+							>
+								Trip Summary
+							</Typography>
+							<Box sx={{ mt: 3 }}>
+								{/* Package Price: ticketPrice * groupSize */}
+								<Box
+								sx={{
+									display: 'flex',
+									justifyContent: 'space-between',
+									mb: 2,
+								}}
 								>
-									Trip Summary
+								<Typography color="white">
+									Package Price ({bookingData?.groupSize || 1} {bookingData?.groupSize === 1 ? 'person' : 'people'})
 								</Typography>
-								<Box sx={{ mt: 3 }}>
-									<Box
-										sx={{
-											display: 'flex',
-											justifyContent: 'space-between',
-											mb: 2,
-										}}
-									>
-										<Typography color="white">
-											Package Price ({groupSizeNum}{' '}
-											{groupSizeNum === 1 ? 'person' : 'people'})
-										</Typography>
-										<Typography color="primary">
-											${packagePrice.toFixed(2)} USD
-										</Typography>
-									</Box>
-									<Box
-										sx={{
-											display: 'flex',
-											justifyContent: 'space-between',
-											mb: 2,
-										}}
-									>
-										<Typography color="white">
-											Accommodation ({groupSizeNum}{' '}
-											{groupSizeNum === 1 ? 'person' : 'people'})
-										</Typography>
-										<Typography color="primary">
-											${accomPrice.toFixed(2)} USD
-										</Typography>
-									</Box>
-									<Box
-										sx={{
-											display: 'flex',
-											justifyContent: 'space-between',
-											mb: 2,
-										}}
-									>
-										<Typography color="white">Room(s)</Typography>
-										<Typography color="primary">
-											${roomsPrice.toFixed(2)} USD
-										</Typography>
-									</Box>
-									{addOnsPrice > 0 && (
-										<Box
-											sx={{
-												display: 'flex',
-												justifyContent: 'space-between',
-												mb: 2,
-											}}
-										>
-											<Typography color="white">Add-ons</Typography>
-											<Typography color="primary">
-												${addOnsPrice.toFixed(2)} USD
-											</Typography>
-										</Box>
-									)}
-									<Box
-										sx={{
-											display: 'flex',
-											justifyContent: 'space-between',
-											mt: 3,
-											pt: 3,
-											borderTop: '2px solid #F821DB',
-											borderColor: '#F821DB',
-										}}
-									>
-										<Typography variant="h6" color="white">
-											Total
-										</Typography>
-										<Typography variant="h6" color="primary">
-											${grandTotal.toFixed(2)} USD
-										</Typography>
-									</Box>
+								<Typography color="primary">
+									${(parseFloat(bookingData?.ticketPrice || 0) * (bookingData?.groupSize || 1)).toFixed(2)} USD
+								</Typography>
 								</Box>
-								<Button
-									variant="contained"
-									color="primary"
-									fullWidth
-									size="large"
-									onClick={handleCheckout}
-									disabled={loading}
-									sx={{ mt: 3 }}
+								{/* Accommodation Price: Assume a price per person per night if hotel.price is missing */}
+								<Box
+								sx={{
+									display: 'flex',
+									justifyContent: 'space-between',
+									mb: 2,
+								}}
 								>
-									{loading ? 'Creating Booking...' : 'Proceed to Checkout'}
-								</Button>
+								<Typography color="white">
+									Accommodation ({bookingData?.groupSize || 1} {bookingData?.groupSize === 1 ? 'person' : 'people'})
+								</Typography>
+								<Typography color="primary">
+									${((bookingData?.hotel?.price ? parseFloat(bookingData.hotel.price) : 100) * (bookingData?.groupSize || 1) * (bookingData?.nights || 1)).toFixed(2)} USD
+								</Typography>
+								</Box>
+								{/* Rooms Price: Direct from bookingData.roomsPrice */}
+								<Box
+								sx={{
+									display: 'flex',
+									justifyContent: 'space-between',
+									mb: 2,
+								}}
+								>
+								<Typography color="white">Room(s)</Typography>
+								<Typography color="primary">
+									${(bookingData?.roomsPrice || 0).toFixed(2)} USD
+								</Typography>
+								</Box>
+								{/* Add-ons Price: Calculate from selectedAddOns */}
+								{bookingData?.selectedAddOns?.length > 0 && (
+								<Box
+									sx={{
+									display: 'flex',
+									justifyContent: 'space-between',
+									mb: 2,
+									}}
+								>
+									<Typography color="white">Add-ons</Typography>
+									<Typography color="primary">
+									${(bookingData.selectedAddOns.reduce((total, addon) => {
+										return total + (addon.totalPrice || addon.quantity * (addon.timeSlot?.price_override || addon.addOn?.price || 0));
+									}, 0)).toFixed(2)} USD
+									</Typography>
+								</Box>
+								)}
+								{/* Total Price: Sum of all components */}
+								<Box
+								sx={{
+									display: 'flex',
+									justifyContent: 'space-between',
+									mt: 3,
+									pt: 3,
+									borderTop: '2px solid #F821DB',
+									borderColor: '#F821DB',
+								}}
+								>
+								<Typography variant="h6" color="white">
+									Total
+								</Typography>
+								<Typography variant="h6" color="primary">
+									${(
+									(parseFloat(bookingData?.ticketPrice || 0) * (bookingData?.groupSize || 1)) + // Package price
+									((bookingData?.hotel?.price ? parseFloat(bookingData.hotel.price) : 100) * (bookingData?.groupSize || 1) * (bookingData?.nights || 1)) + // Accommodation price
+									(bookingData?.roomsPrice || 0) + // Rooms price
+									(bookingData?.selectedAddOns?.reduce((total, addon) => {
+										return total + (addon.totalPrice || addon.quantity * (addon.timeSlot?.price_override || addon.addOn?.price || 0));
+									}, 0) || 0) // Add-ons price
+									).toFixed(2)} USD
+								</Typography>
+								</Box>
+							</Box>
+							<Button
+								variant="contained"
+								color="primary"
+								fullWidth
+								size="large"
+								disabled={loading}
+								sx={{ mt: 3 }}
+							>
+								{loading ? 'Creating Booking...' : 'Proceed to Checkout'}
+							</Button>
+							{/* Calculate totalPrice to pass to payment buttons */}
+							{
+								(() => {
+								const totalPrice = (
+									(parseFloat(bookingData?.ticketPrice || 0) * (bookingData?.groupSize || 1)) +
+									((bookingData?.hotel?.price ? parseFloat(bookingData.hotel.price) : 100) * (bookingData?.groupSize || 1) * (bookingData?.nights || 1)) +
+									(bookingData || 0) +
+									(bookingData.selectedAddOns?.reduce((total, addon) => {
+									return total + (addon.totalPrice || addon.quantity * (addon.timeSlot?.price_override || addon.addOn?.price || 0));
+									}, 0) || 0)
+								);
+								return (
+									<div style={{ textAlign: 'center', padding: '20px' }}>
+									<h1>Buy Now for ${totalPrice.toFixed(2)}</h1>
+									<PayPalButton totalPrice={totalPrice} />
+									<StripeButton totalPrice={totalPrice} />
+									</div>
+								);
+								})()
+							}
 							</Box>
 						</Card>
-					</Box>
+						</Box>
 				</Box>
 			</Container>
 		</Box>
