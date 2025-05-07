@@ -15,7 +15,7 @@ export default function EventDetails() {
 			try {
 				setLoading(true)
 				const response = await api.get(`event/packages/`)
-				console.log(response.data)
+				console.log('PACKAGES:', response.data)
 				setPackages(response.data)
 				setError(null)
 			} catch (error) {
