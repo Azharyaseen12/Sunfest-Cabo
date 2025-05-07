@@ -147,6 +147,7 @@ export default function AccommodationSelection() {
 	}
 
 
+	
 	return (
 		<Box className="min-h-screen bg-transparent text-white">
 			<Container maxWidth="lg" sx={{ pt: 6, pb: 8 }}>
