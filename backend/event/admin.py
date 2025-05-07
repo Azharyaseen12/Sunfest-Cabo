@@ -16,6 +16,7 @@ from .models import (
     PackageFeature,
     BookingAfterParty,
     AfterParty,
+    HotelImage,
 )
 
 
@@ -95,11 +96,19 @@ class AfterPartyAdmin(admin.ModelAdmin):
     date_hierarchy = "event_date"
 
 
+# Hotel Image Admin Inline
+class HotelImageInline(admin.TabularInline):
+    model = HotelImage
+    extra = 1
+
+
+# Hotel Admin
 @admin.register(Hotel)
 class HotelAdmin(admin.ModelAdmin):
     list_display = ("hotel_name", "address")
     search_fields = ("hotel_name", "address", "description")
     ordering = ("hotel_name",)
+    inlines = [HotelImageInline]
 
 
 @admin.register(RoomType)

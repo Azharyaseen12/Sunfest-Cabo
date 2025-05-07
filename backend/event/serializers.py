@@ -49,7 +49,16 @@ class TicketTypeSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = TicketType
-        fields = ["id", "package", "ticket_name", "price", "description"]
+        fields = [
+            "id",
+            "package",
+            "ticket_name",
+            "price",
+            "description",
+            "is_standard_hotel_included",
+            "is_transportation_included",
+            "is_vip_after_party_included",
+        ]
 
 
 class EventDaySerializer(serializers.ModelSerializer):
@@ -93,15 +102,20 @@ class AfterPartySerializer(serializers.ModelSerializer):
 
 
 class HotelSerializer(serializers.ModelSerializer):
+    images = serializers.SerializerMethodField()
+
+    def get_images(self, obj):
+        return obj.images.all().values("id", "image")
+
     class Meta:
         model = Hotel
-        fields = ["id", "hotel_name", "address", "rating", "description"]
+        fields = ["id", "hotel_name", "address", "rating", "description", "images"]
 
 
 class RoomTypeSerializer(serializers.ModelSerializer):
     class Meta:
         model = RoomType
-        fields = ["id", "room_type_name", "description", "capacity"]
+        fields = ["id", "room_type_name", "description", "capacity", "image"]
 
 
 class RoomInventorySerializer(serializers.ModelSerializer):
@@ -116,6 +130,9 @@ class RoomInventorySerializer(serializers.ModelSerializer):
             "total_rooms",
             "remaining_rooms",
             "price_per_night",
+            "resort_fee_percentage",
+            "vat_percentage",
+            "logging_price_percentage",
         ]
 
 
@@ -130,6 +147,7 @@ class AddOnSerializer(serializers.ModelSerializer):
             "total_inventory",
             "remaining_inventory",
             "is_per_person",
+            "image",
         ]
 
 

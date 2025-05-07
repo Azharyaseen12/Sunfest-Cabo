@@ -14,27 +14,41 @@ import {
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns'
 import api from '../utils/api'
-import { useDispatch } from 'react-redux'
-import { setDates } from '../store/slices/bookingSlice'
 import Hotel from '../assets/images/Hotel.png'
+import { useSelector, useDispatch } from 'react-redux';
+import { setHotel, setDates, setStep } from '../store/slices/bookingSlice';
 
-export default function AccommodationSelection({
-	packageId,
-	onNext,
-	setBookingData,
-	bookingData,
-	onSkip
-}) {
+export default function AccommodationSelection() {
+	const { hotel , packageId } = useSelector((state) => state.booking);
+	const dispatch = useDispatch();
 	const [accommodations, setAccommodations] = useState([])
-	const [selectedHotel, setSelectedHotel] = useState(bookingData?.hotel || {})
+	const [selectedHotel, setSelectedHotel] = useState(hotel || {})
 	const [dateDialogOpen, setDateDialogOpen] = useState(false)
 	const [checkInDate, setCheckInDate] = useState(null)
 	const [checkOutDate, setCheckOutDate] = useState(null)
 	const [dateError, setDateError] = useState('')
 
-	console.log('bookingData in AccommodationSelection', bookingData)
-	const MIN_STAY = 1 // Minimum number of nights required
-	const dispatch = useDispatch()
+
+
+
+  const handleDateSelection = () => {
+    const calculatedNights = calculateNights(checkInDate, checkOutDate);
+    
+    dispatch(setDates({
+      checkIn: checkInDate.toISOString(),
+      checkOut: checkOutDate.toISOString(),
+      nights: calculatedNights,
+    }));
+    
+    dispatch(setHotel(selectedHotel));
+    dispatch(setStep(4));
+  };
+
+  const handleSkip = () => {
+    dispatch(setStep(5)); 
+  };
+
+	const MIN_STAY = 1 
 
 	// Define the available date range for booking
 	// TODO: Update these dates as needed or pass them as props
@@ -106,13 +120,6 @@ export default function AccommodationSelection({
 		setSelectedHotel(hotel)
 		setDateDialogOpen(true)
 	}
-	const handleSkip = () => {
-		setBookingData(prev => ({
-			...prev,
-			hotel: null,
-		  }))
-		onSkip()
-	}
 
 	const handleDateDialogClose = () => {
 		setDateDialogOpen(false)
@@ -139,39 +146,6 @@ export default function AccommodationSelection({
 		setDateError('')
 	}
 
-	const handleDateSelection = () => {
-		if (!checkInDate || !checkOutDate) {
-			setDateError('Please select both check-in and check-out dates')
-			return
-		}
-
-		const calculatedNights = calculateNights(checkInDate, checkOutDate)
-		if (calculatedNights < MIN_STAY) {
-			setDateError(`Minimum stay is ${MIN_STAY} nights`)
-			return
-		}
-
-		if (checkOutDate <= checkInDate) {
-			setDateError('Check-out date must be after check-in date')
-			return
-		}
-		dispatch(
-			setDates({
-				checkIn: checkInDate.toISOString(),
-				checkOut: checkOutDate.toISOString(),
-				nights: calculatedNights,
-			})
-		)
-		// Navigate to rooms page with dates
-		setBookingData((prev) => ({
-			...prev,
-			checkInDate: checkInDate.toISOString(),
-			checkOutDate: checkOutDate.toISOString(),
-			nights: calculatedNights,
-			hotel: accommodations[0],
-		}))
-		onNext()
-	}
 
 	return (
 		<Box className="min-h-screen bg-transparent text-white">

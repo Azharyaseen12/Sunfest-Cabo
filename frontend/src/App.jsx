@@ -1,5 +1,3 @@
-import { useEffect, useState } from 'react'
-
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router'
 
 import { ThemeProvider, createTheme } from '@mui/material/styles'
@@ -8,18 +6,8 @@ import GlobalStyles from '@mui/material/GlobalStyles'
 
 import { store } from './store'
 import { Provider } from 'react-redux'
-import { useDispatch } from 'react-redux'
-import { checkAuth } from './store/slices/AuthSlice'
 
 import EventDetails from './pages/EventDetails'
-import PackageSelection from './pages/PackageSelection'
-import GroupSizeSelection from './pages/GroupSizeSelection'
-import AccommodationSelection from './pages/AccommodationSelection'
-import RoomSelection from './pages/RoomSelection'
-import AddOnSelection from './pages/AddOnSelection'
-import ReviewPackage from './pages/ReviewPackage'
-
-import api from './utils/api'
 
 import BookingSuccess from './pages/BookingSuccess'
 import PaymentSuccess from './pages/PaymentSuccess'
@@ -78,51 +66,18 @@ const globalStyles = {
 
 // Create a separate component for the app content
 function AppContent() {
-
 	return (
 		<ThemeProvider theme={theme}>
 			<CssBaseline />
 			<GlobalStyles styles={globalStyles} />
 			<Routes>
-				<Route path="/" element={<EventDetails />}/>
+				<Route path="/" element={<EventDetails />} />
 				<Route path="/verify-email/:token" element={<VerifyEmail />} />
 				<Route
 					path="/events/:eventId/packages"
 					element={<Navigate to="/events/:eventId" replace />}
 				/>
-				{/* <Route
-					path="/events/:eventId/packages/:event_date_id"
-					element={<PackageSelection />}
-				/>
-				<Route
-					path="/events/:eventId/packages/:event_date_id/plane/:packageId/group-size"
-					element={<GroupSizeSelection />}
-				/>
-				<Route
-					path="/events/:eventId/packages/:event_date_id/plane/:packageId/group-size/:groupSize/accommodation"
-					element={<AccommodationSelection />}
-				/>
-				<Route
-					path="/events/:eventId/packages/:event_date_id/plane/:packageId/group-size/:groupSize/accommodation/:aId/rooms"
-					element={<RoomSelection />}
-				/>
-				<Route
-					path="/events/:eventId/packages/:event_date_id/plane/:packageId/group-size/:groupSize/accommodation/:aId/rooms/:roomId/add-ons"
-					element={<AddOnSelection />}
-				/>
-				<Route
-					path="/events/:eventId/packages/:event_date_id/plane/:packageId/group-size/:groupSize/accommodation/:aId/rooms/:roomIds/review"
-					element={<ReviewPackage />}
-				
-				/>
-				<Route 
-					path="/events/:eventId/packages/:event_date_id/plane/:packageId/booking/:step" 
-					element={<BookingStepper />} 
-					/> */}
-				<Route 
-					path="/events/booking/" 
-					element={<BookingStepper />} 
-					/>
+				<Route path="/events/booking/" element={<BookingStepper />} />
 				<Route path="/booking-success" element={<BookingSuccess />} />
 				<Route path="/booking/success" element={<PaymentSuccess />} />
 				<Route path="/booking/cancel" element={<PaymentCancel />} />
