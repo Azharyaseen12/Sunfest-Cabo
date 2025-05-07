@@ -49,7 +49,16 @@ class TicketTypeSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = TicketType
-        fields = ["id", "package", "ticket_name", "price", "description"]
+        fields = [
+            "id",
+            "package",
+            "ticket_name",
+            "price",
+            "description",
+            "is_standard_hotel_included",
+            "is_transportation_included",
+            "is_vip_after_party_included",
+        ]
 
 
 class EventDaySerializer(serializers.ModelSerializer):
