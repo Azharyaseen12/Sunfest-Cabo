@@ -121,3 +121,93 @@ def get_booking_by_session(request, session_id):
         return Response({"error": "Payment not found"}, status=404)
     except Exception as e:
         return Response({"error": str(e)}, status=400)
+
+# payments/views.py
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from .models import PaypalPayment,StripPayment
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
+
+@method_decorator(csrf_exempt, name='dispatch')
+class PaymentCallbackView(APIView):
+    def post(self, request):
+        try:
+            data = request.data
+            payment = PaypalPayment.objects.create(
+                transaction_id=data['transaction_id'],
+                payer_email=data['payer_email'],
+                payer_name=data['payer_name'],
+                amount=data['amount'],
+                currency=data.get('currency', 'USD'),
+                status=data['status']
+            )
+            return Response({
+                'message': 'Payment recorded successfully',
+                'payment_id': payment.id
+            }, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            return Response({
+                'error': str(e)
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+# Set Stripe API key
+stripe.api_key = "sk_test_51MbFiSHy6xVLM3X4JHptpubaBglmQwf2EbqJsDQ06M6p91XuLXrH1HXYN0dTnI8AB5Wgi1vTx9AsFkkVwH04jlAn00EXmI7xdA"
+class StripeCheckoutView(APIView):
+    def get(self, request):
+        return Response({"message": "Stripe Checkout View"})
+    def post(self, request):
+
+        print("StripeCheckoutView POST request received")  # Log for debugging
+        try:
+            # Create a Stripe checkout session
+            amount = request.data.get('amount', 1000)  # Use amount from request, default to 1000 cents ($10) if not provided
+            if not amount or amount <= 0:
+                raise ValueError("Invalid amount provided")
+            session = stripe.checkout.Session.create(
+                payment_method_types=['card'],
+                line_items=[{
+                    'price_data': {
+                        'currency': 'usd',
+                        'unit_amount': amount,  # $10.00 in cents
+                        'product_data': {
+                            'name': 'One-Time Payment',
+                        },
+                    },
+                    'quantity': 1,
+                }],
+                mode='payment',
+                success_url='http://localhost:5173/?success=true&session_id={CHECKOUT_SESSION_ID}',
+                cancel_url='http://localhost:5173/?canceled=true',
+            )
+            return Response({'sessionId': session.id}, status=status.HTTP_200_OK)
+        except Exception as e:
+            print(f"StripeCheckoutView Error: {str(e)}")  # Log error for debugging
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+@method_decorator(csrf_exempt, name='dispatch')
+class StripeCallbackView(APIView):
+    def get(self, request):
+        return Response({"message": "Stripe Callback View GET request received"})
+    def post(self, request):
+        print("StripeCallbackView POST request received")
+        try:
+            data = request.data
+            payment = Payment.objects.create(
+                transaction_id=data['transaction_id'],
+                payer_email=data['payer_email'],
+                payer_name=data['payer_name'],
+                amount=data['amount'],
+                currency=data.get('currency', 'USD'),
+                status=data['status']
+            )
+            return Response({
+                'message': 'Payment recorded successfully',
+                'payment_id': payment.id
+            }, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            print(f"StripeCallbackView Error: {str(e)}")  # Log error for debugging
+            return Response({
+                'error': str(e)
+            }, status=status.HTTP_400_BAD_REQUEST)
