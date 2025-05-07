@@ -1,82 +1,93 @@
-import { createSlice } from '@reduxjs/toolkit'
+import { createSlice } from '@reduxjs/toolkit';
 
 const initialState = {
-	eventId: null,
-	packageId: null,
-	groupSize: null,
-	hotel: {
-		id: null,
-		name: null,
-	},
-	selectedRooms: [], // Array of { room, quantity } objects
-	roomQuantities: {}, // Map of roomId to quantity
-	addons: [],
-	dates: {
-		checkIn: null,
-		checkOut: null,
-		nights: null,
-	},
-	pricing: {
-		subtotal: 0,
-		taxesAndFees: 0,
-		total: 0,
-	},
-}
+  packageId: null,
+  pricePerPerson: 0,
+  selectedTicket: null,
+  selectedDate: null,
+  afterParties: [],
+  groupSize: 1,
+  hotel: null,
+  checkInDate: null,
+  checkOutDate: null,
+  nights: 0,
+  selectedRooms: [],
+  roomQuantities: {},
+  roomIdsWithQuantities: '',
+  roomsPrice: 0,
+  selectedAddOns: [],
+  totalPrice: 0,
+  userInfo: {
+    firstName: '',
+    lastName: '',
+    email: '',
+    confirmEmail: '',
+    subscribe: false,
+  },
+  step: 0,
+};
 
 export const bookingSlice = createSlice({
-	name: 'booking',
-	initialState,
-	reducers: {
-		setEventDetails: (state, action) => {
-			const { eventId, packageId } = action.payload
-			state.eventId = eventId
-			state.packageId = packageId
-		},
-		setGroupSize: (state, action) => {
-			state.groupSize = action.payload
-		},
-		setHotel: (state, action) => {
-			state.hotel = action.payload
-		},
-		setSelectedRooms: (state, action) => {
-			state.selectedRooms = action.payload
-			// Update roomQuantities map
-			state.roomQuantities = action.payload.reduce(
-				(acc, { room, quantity }) => {
-					acc[room.id] = quantity
-					return acc
-				},
-				{}
-			)
-		},
-		addAddon: (state, action) => {
-			state.addons.push(action.payload)
-		},
-		removeAddon: (state, action) => {
-			state.addons = state.addons.filter((addon) => addon.id !== action.payload)
-		},
-		setDates: (state, action) => {
-			state.dates = action.payload
-		},
-		setPricing: (state, action) => {
-			state.pricing = action.payload
-		},
-		resetBooking: () => {
-			return initialState
-		},
-	},
-})
+  name: 'booking',
+  initialState,
+  reducers: {
+    setPackage: (state, action) => {
+		state.packageId = action.payload.packageId;
+		state.pricePerPerson = action.payload.pricePerPerson;
+	  },	  
+    setTicket: (state, action) => {
+      state.selectedTicket = action.payload.id;
+      state.selectedDate = action.payload.date;
+      state.after_party_type = action.payload.ticketName;
+      state.ticketPrice = action.payload.price;
+    },
+    setAfterParties: (state, action) => {
+      state.afterParties = action.payload.afterParties;
+      state.partyPrice = action.payload.partyPrice;
+    },
+    setGroupSize: (state, action) => {
+      state.groupSize = action.payload;
+    },
+    setHotel: (state, action) => {
+      state.hotel = action.payload;
+    },
+    setDates: (state, action) => {
+      state.checkInDate = action.payload.checkIn;
+      state.checkOutDate = action.payload.checkOut;
+      state.nights = action.payload.nights;
+    },
+    setSelectedRooms: (state, action) => {
+      state.selectedRooms = action.payload.rooms;
+      state.roomQuantities = action.payload.quantities;
+      state.roomIdsWithQuantities = action.payload.idsWithQuantities;
+      state.roomsPrice = action.payload.totalPrice;
+    },
+    setAddOns: (state, action) => {
+      state.selectedAddOns = action.payload.addOns;
+      state.totalPrice = (state.totalPrice || 0) + action.payload.totalPrice;
+    },
+    setUserInfo: (state, action) => {
+      state.userInfo = { ...state.userInfo, ...action.payload };
+    },
+    setStep: (state, action) => {
+      state.step = action.payload;
+    },
+    resetBooking: () => initialState,
+  },
+});
 
 export const {
-	setEventDetails,
-	setGroupSize,
-	setHotel,
-	setSelectedRooms,
-	addAddon,
-	removeAddon,
-	setDates,
-	setPricing,
-	resetBooking,
-} = bookingSlice.actions
+  setPackage,
+  setTicket,
+  setAfterParties,
+  setGroupSize,
+  setHotel,
+  setDates,
+  setSelectedRooms,
+  setAddOns,
+  setUserInfo,
+  setStep,
+  resetBooking,
+} = bookingSlice.actions;
 
-export default bookingSlice.reducer
+export default bookingSlice.reducer;
