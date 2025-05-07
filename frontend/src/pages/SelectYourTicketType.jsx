@@ -106,7 +106,8 @@ export default function SelectYourTicketType() {
                             gap: 4,
                             mt: 4,
                             justifyItems : "center",
-                            justifyContent:"center"
+                            justifyContent:"center",
+                            flexDirection: { xs: 'column', sm: 'row' },
                         }}
                     >
                         {ticketTypes.map((ticket) => (
@@ -121,7 +122,7 @@ export default function SelectYourTicketType() {
                                     flexDirection: "column",
                                     justifyContent: "space-between",
                                     gap: 1,
-                                    width : "32%",
+                                    width : "100%",
                                     border: selectedTicket === ticket.id && '2px solid #F821DB',
                                     '&:hover': {
                                         borderColor: selectedTicket === ticket.id? 'primary.main' : '#FFFFFF80',
