@@ -189,7 +189,7 @@ class StripeCheckoutView(APIView):
 @method_decorator(csrf_exempt, name='dispatch')
 class StripeCallbackView(APIView):
     def get(self, request):
-        return Response({"message": "Stripe Callback View"})
+        return Response({"message": "Stripe Callback View GET request received"})
     def post(self, request):
         print("StripeCallbackView POST request received")
         try:
