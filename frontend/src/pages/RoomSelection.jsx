@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react';
 import {
     Box,
     Container,
@@ -11,31 +11,35 @@ import {
     Tooltip,
     Alert,
     Grid,
-} from '@mui/material'
+} from '@mui/material';
 import {
     ChevronRight,
     ChevronLeft,
     ChevronRight as ChevronRightIcon,
-} from 'lucide-react'
-import api from '../utils/api'
+} from 'lucide-react';
+import api from '../utils/api';
+import { useDispatch, useSelector } from 'react-redux';
+import { setSelectedRooms, setStep } from '../store/slices/bookingSlice';
 
 const Carousel = ({ alt }) => {
-    const [currentIndex, setCurrentIndex] = useState(0)
+    const [currentIndex, setCurrentIndex] = useState(0);
     const defaultImage =
-        'https://images.unsplash.com/photo-1615460549969-36fa19521a4f?q=80&w=1974&auto=format&fit=crop'
-    const displayImages = [{ image: defaultImage }]
+        'https://images.unsplash.com/photo-1615460549969-36fa19521a4f?q=80&w=1974&auto=format&fit=crop';
+    const displayImages = [{ image: defaultImage }];
 
-    const handlePrev = () => {
+    const handlePrev = (event) => {
+        event.preventDefault();
         setCurrentIndex((prev) =>
             prev === 0 ? displayImages.length - 1 : prev - 1
-        )
-    }
+        );
+    };
 
-    const handleNext = () => {
+    const handleNext = (event) => {
+        event.preventDefault();
         setCurrentIndex((prev) =>
             prev === displayImages.length - 1 ? 0 : prev + 1
-        )
-    }
+        );
+    };
 
     return (
         <Box
@@ -115,6 +119,7 @@ const Carousel = ({ alt }) => {
             {displayImages.length > 1 && (
                 <>
                     <IconButton
+                        type="button"
                         onClick={handlePrev}
                         sx={{
                             position: 'absolute',
@@ -129,6 +134,7 @@ const Carousel = ({ alt }) => {
                         <ChevronLeft size={24} />
                     </IconButton>
                     <IconButton
+                        type="button"
                         onClick={handleNext}
                         sx={{
                             position: 'absolute',
@@ -171,64 +177,68 @@ const Carousel = ({ alt }) => {
                 </>
             )}
         </Box>
-    )
-}
+    );
+};
 
-export default function RoomSelection({
-    bookingData,
-    setBookingData,
-    onNext,
-    onBack,
-}) {
-    const [rooms, setRooms] = useState([])
-    const [hotel, setHotel] = useState(bookingData.hotel || null)
-    const [totalCapacity, setTotalCapacity] = useState(0)
-    const [error, setError] = useState(null)
-    const [loading, setLoading] = useState(true)
-    const [numberOfNights, setNumberOfNights] = useState(0)
-    const [selectedRooms, setSelectedRooms] = useState(bookingData.selectedRooms || [])
+export default function RoomSelection() {
+    const { groupSize, hotel, checkInDate, checkOutDate, nights, selectedRooms } =
+        useSelector((state) => state.booking);
+    const [rooms, setRooms] = useState([]);
+    const [error, setError] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [numberOfNights, setNumberOfNights] = useState(0);
+    const [bookingState, setBookingState] = useState({
+        selectedRooms: selectedRooms || [],
+        totalCapacity:
+            selectedRooms?.reduce(
+                (sum, selection) => sum + selection.room.capacity * selection.quantity,
+                0
+            ) || 0,
+    });
+    const scrollRef = useRef(0);
+    const dispatch = useDispatch();
+
+    useEffect(() => {
+        window.scrollTo(0, scrollRef.current); // Restore scroll position
+    }, [bookingState]);
 
     useEffect(() => {
         const fetchData = async () => {
-            if (
-                !bookingData.groupSize ||
-                !bookingData.checkInDate ||
-                !bookingData.checkOutDate
-            ) {
-                setError('Invalid selection or missing dates')
-                setLoading(false)
-                return
+            if (!groupSize || !checkInDate || !checkOutDate) {
+                setError('Invalid selection or missing dates');
+                setLoading(false);
+                return;
             }
 
             try {
-                setLoading(true)
-                setError(null)
+                setLoading(true);
+                setError(null);
 
-                const startDate = new Date(bookingData.checkInDate)
-                const endDate = new Date(bookingData.checkOutDate)
+                const startDate = new Date(checkInDate);
+                const endDate = new Date(checkOutDate);
                 const nights = Math.max(
                     1,
                     Math.round((endDate - startDate) / (1000 * 60 * 60 * 24))
-                )
-                setNumberOfNights(nights)
+                );
+                setNumberOfNights(nights);
 
                 // Fetch room inventory
-                const inventoryResponse = await api.get('event/room-inventory/')
-                const allInventory = inventoryResponse.data
+                const inventoryResponse = await api.get('event/room-inventory/');
+                const allInventory = inventoryResponse.data;
 
                 // Process inventory data
-                const stayDates = []
+                const stayDates = [];
                 for (let i = 0; i < nights; i++) {
-                    const date = new Date(startDate)
-                    date.setDate(startDate.getDate() + i)
-                    stayDates.push(date.toISOString().split('T')[0])
+                    const date = new Date(startDate);
+                    date.setDate(startDate.getDate() + i);
+                    stayDates.push(date.toISOString().split('T')[0]);
                 }
 
-                const roomTypesMap = new Map()
+                const roomTypesMap = new Map();
 
                 allInventory.forEach((item) => {
                     if (stayDates.includes(item.stay_date)) {
-                        const roomTypeId = item.room_type.id
+                        const roomTypeId = item.room_type.id;
                         if (!roomTypesMap.has(roomTypeId)) {
                             roomTypesMap.set(roomTypeId, {
                                 id: roomTypeId,
@@ -236,237 +246,224 @@ export default function RoomSelection({
                                 description: item.room_type.description,
                                 capacity: item.room_type.capacity,
                                 inventory: [],
-                            })
+                            });
                         }
                         roomTypesMap.get(roomTypeId).inventory.push({
                             stay_date: item.stay_date,
                             remaining_rooms: item.remaining_rooms,
                             price_per_night: parseFloat(item.price_per_night),
-                        })
+                        });
                     }
-                })
+                });
 
-                const availableRoomTypes = []
+                const availableRoomTypes = [];
                 roomTypesMap.forEach((roomType) => {
-                    // Check if room is available for all stay dates
                     if (roomType.inventory.length === nights) {
                         const min_remaining_rooms = Math.min(
                             ...roomType.inventory.map((inv) => inv.remaining_rooms)
-                        )
+                        );
                         const total_price_for_stay = roomType.inventory.reduce(
                             (sum, inv) => sum + inv.price_per_night,
                             0
-                        )
-                        const average_price_per_night = total_price_for_stay / nights
+                        );
+                        const average_price_per_night = total_price_for_stay / nights;
 
                         if (min_remaining_rooms > 0) {
                             availableRoomTypes.push({
-                                ...roomType, // id, room_type_name, description, capacity
+                                ...roomType,
                                 available_rooms: min_remaining_rooms,
-                                price: average_price_per_night, // This is now avg price per night
+                                price: average_price_per_night,
                                 totalPriceForStay: total_price_for_stay,
-                            })
+                            });
                         }
                     }
-                })
+                });
 
-                setRooms(availableRoomTypes)
-
-                // Fetch hotel details
-                const accommodationResponse = await api.get(
-                    `event/hotels/${bookingData.hotel.id}`
-                )
-                setHotel(accommodationResponse.data)
-
-                // Calculate initial total capacity from bookingData
-                if (bookingData.selectedRooms && bookingData.selectedRooms.length > 0) {
-                    const initialCapacity = bookingData.selectedRooms.reduce(
-                        (sum, selection) => sum + selection.room.capacity * selection.quantity,
-                        0
-                    )
-                    setTotalCapacity(initialCapacity)
-                }
+                setRooms(availableRoomTypes);
             } catch (error) {
-                console.error('Error fetching data:', error)
+                console.error('Error fetching data:', error);
                 if (error.response?.status === 404) {
                     setError(
                         'No rooms found for the selected criteria or dates. Please try again later.'
-                    )
+                    );
                 } else {
-                    setError('Failed to load data. Please try again later.')
+                    setError('Failed to load data. Please try again later.');
                 }
             } finally {
-                setLoading(false)
+                setLoading(false);
             }
-        }
+        };
 
-        fetchData()
-    }, [
-        bookingData.groupSize,
-        bookingData.hotel,
-        bookingData.checkInDate,
-        bookingData.checkOutDate,
-        bookingData.selectedRooms
-    ])
+        fetchData();
+    }, [groupSize, hotel, checkInDate, checkOutDate]);
 
     const canSelectRoom = (room) => {
-        if (!bookingData.groupSize) return false
+        if (!groupSize) return false;
 
-        // Get current selections for this room type
-        const currentRoomSelections = selectedRooms.filter(
+        const currentRoomSelections = bookingState.selectedRooms.filter(
             (selected) => selected.room.id === room.id
-        )
+        );
         const currentQuantity = currentRoomSelections.reduce(
             (sum, selection) => sum + selection.quantity,
             0
-        )
+        );
 
-        // Check if we have enough available rooms
-        return currentQuantity < room.available_rooms
-    }
+        return currentQuantity < room.available_rooms;
+    };
 
-    const handleSelectRoom = (room, quantity) => {
-        const updatedSelectedRooms = [...selectedRooms]
+    const handleSelectRoom = (room, quantity, event) => {
+        event.preventDefault();
+        scrollRef.current = window.scrollY; // Save scroll position
+
+        const updatedSelectedRooms = [...bookingState.selectedRooms];
         const existingRoomIndex = updatedSelectedRooms.findIndex(
             (selected) => selected.room.id === room.id
-        )
+        );
 
         if (quantity > 0) {
             if (existingRoomIndex >= 0) {
-                updatedSelectedRooms[existingRoomIndex].quantity = quantity
+                updatedSelectedRooms[existingRoomIndex].quantity = quantity;
             } else {
-                updatedSelectedRooms.push({ room, quantity })
+                updatedSelectedRooms.push({ room, quantity });
             }
         } else {
             if (existingRoomIndex >= 0) {
-                updatedSelectedRooms.splice(existingRoomIndex, 1)
+                updatedSelectedRooms.splice(existingRoomIndex, 1);
             }
         }
 
-        setSelectedRooms(updatedSelectedRooms)
-
-        // Recalculate total capacity after updating selected rooms
         const newTotalCapacity = updatedSelectedRooms.reduce(
             (sum, selection) => sum + selection.room.capacity * selection.quantity,
             0
-        )
-        setTotalCapacity(newTotalCapacity)
-    }
+        );
 
-    const handleQuantityChange = (room, newQuantity) => {
-        if (!bookingData.groupSize) return
+        setBookingState({
+            selectedRooms: updatedSelectedRooms,
+            totalCapacity: newTotalCapacity,
+        });
+    };
 
-        const currentSelection = selectedRooms.find(
-            (selected) => selected.room.id === room.id
-        )
-        if (!currentSelection) return
+    const handleQuantityChange = (room, newQuantity, event) => {
+        event.preventDefault();
+        scrollRef.current = window.scrollY; // Save scroll position
 
-        // Calculate the new total capacity if we make this change
-        const updatedSelections = selectedRooms.map((selected) =>
+        if (!groupSize) return;
+
+        const updatedSelections = bookingState.selectedRooms.map((selected) =>
             selected.room.id === room.id
-                ? {
-                      ...selected,
-                      quantity: newQuantity,
-                      totalCapacity: newQuantity * room.capacity,
-                  }
+                ? { ...selected, quantity: newQuantity }
                 : selected
-        )
+        );
 
         const newTotalCapacity = updatedSelections.reduce(
             (sum, selection) => sum + selection.room.capacity * selection.quantity,
             0
-        )
+        );
 
-        // Update both state and capacity
-        setSelectedRooms(updatedSelections)
-        setTotalCapacity(newTotalCapacity)
-    }
+        setBookingState({
+            selectedRooms: updatedSelections,
+            totalCapacity: newTotalCapacity,
+        });
+    };
 
     const isRoomSelected = (room) => {
-        return selectedRooms.some((r) => r.room.id === room.id)
-    }
+        return bookingState.selectedRooms.some((r) => r.room.id === room.id);
+    };
 
     const getRoomQuantity = (room) => {
-        const selectedRoom = selectedRooms.find((r) => r.room.id === room.id)
-        return selectedRoom ? selectedRoom.quantity : 0
-    }
+        const selectedRoom = bookingState.selectedRooms.find((r) => r.room.id === room.id);
+        return selectedRoom ? selectedRoom.quantity : 0;
+    };
 
-    const handleNext = () => {
-        if (!bookingData.groupSize || totalCapacity < bookingData.groupSize) return
-      
-        //=========================================== Calculate the total price for all selected rooms
-        const roomsTotalPrice = selectedRooms.reduce(
-          (sum, { room, quantity }) => sum + (room.price * quantity * numberOfNights),
-          0
-        )
-      
-        //=============================================== Create an array of room IDs with their quantities
-        const roomIdsWithQuantities = selectedRooms
-          .flatMap(({ room, quantity }) => Array(quantity).fill(room.id))
-          .join(',')
-      
-        //======================================================== Create a map of room IDs to quantities for the state
-        const roomQuantities = selectedRooms.reduce((acc, { room, quantity }) => {
-          acc[room.id] = quantity
-          return acc
-        }, {})
-      
-        setBookingData(prev => ({
-          ...prev,
-          selectedRooms: [...selectedRooms],
-          roomQuantities,
-          roomIdsWithQuantities,
-          roomsPrice: parseFloat(roomsTotalPrice.toFixed(2)),
-        }))
-        
-        onNext()
-      }
+    const handleNext = (event) => {
+        event.preventDefault();
+        const roomsTotalPrice = bookingState.selectedRooms.reduce(
+            (sum, { room, quantity }) => sum + room.price * quantity * nights,
+            0
+        );
+
+        const roomIdsWithQuantities = bookingState.selectedRooms
+            .flatMap(({ room, quantity }) => Array(quantity).fill(room.id))
+            .join(',');
+
+        const roomQuantities = bookingState.selectedRooms.reduce(
+            (acc, { room, quantity }) => {
+                acc[room.id] = quantity;
+                return acc;
+            },
+            {}
+        );
+
+        dispatch(
+            setSelectedRooms({
+                rooms: bookingState.selectedRooms,
+                quantities: roomQuantities,
+                idsWithQuantities: roomIdsWithQuantities,
+                totalPrice: parseFloat(roomsTotalPrice.toFixed(2)),
+            })
+        );
+
+        dispatch(setStep(5));
+    };
 
     if (loading) {
         return (
             <Box className="min-h-screen bg-transparent text-white">
-                <Container maxWidth="xl" sx={{ pt: 12, pb: 8, textAlign: 'center' }}>
+                <Container
+                    maxWidth="xl"
+                    sx={{ pt: 12, pb: 8, textAlign: 'center', minHeight: '100vh' }}
+                >
                     <Typography variant="h6">Loading room options...</Typography>
                 </Container>
             </Box>
-        )
+        );
     }
 
     if (error) {
         return (
             <Box className="min-h-screen bg-transparent text-white">
-                <Container maxWidth="xl" sx={{ pt: 12, pb: 8 }}>
+                <Container maxWidth="xl" sx={{ pt: 12, pb: 8, minHeight: '100vh' }}>
                     <Alert severity="error" sx={{ mb: 4 }}>
                         {error}
                     </Alert>
-                    <Button variant="contained" color="primary" onClick={onBack}>
+                    <Button
+                        type="button"
+                        variant="contained"
+                        color="primary"
+                        onClick={() => dispatch(setStep(4))}
+                    >
                         Go Back
                     </Button>
                 </Container>
             </Box>
-        )
+        );
     }
 
-    if (!bookingData.groupSize) {
+    if (!groupSize) {
         return (
             <Box className="min-h-screen bg-transparent text-white">
-                <Container maxWidth="xl" sx={{ pt: 12, pb: 8 }}>
+                <Container maxWidth="xl" sx={{ pt: 12, pb: 8, minHeight: '100vh' }}>
                     <Alert severity="error" sx={{ mb: 4 }}>
                         No group size selected. Please go back and select a group size.
                     </Alert>
-                    <Button variant="contained" color="primary" onClick={onBack}>
+                    <Button
+                        type="button"
+                        variant="contained"
+                        color="primary"
+                        onClick={() => dispatch(setStep(4))}
+                    >
                         Go Back
                     </Button>
                 </Container>
             </Box>
-        )
+        );
     }
 
     return (
         <Box className="min-h-screen bg-transparent text-white">
-            <Container maxWidth="xl" sx={{ pt: 6, pb: 8 }}>
+            <Container maxWidth="xl" sx={{ pt: 6, pb: 8, minHeight: '100vh' }}>
                 {/* Hotel Images Carousel */}
-                {hotel && <Carousel images={hotel.images} alt={hotel.title} />}
+                {hotel && <Carousel alt={hotel.title} />}
 
                 {/* Hotel Info */}
                 <Box
@@ -486,31 +483,24 @@ export default function RoomSelection({
                             {hotel?.address || 'Loading...'}
                         </Typography>
                         <Typography color="primary" gutterBottom>
-                            {bookingData.checkInDate
-                                ? new Date(bookingData.checkInDate).toLocaleDateString(
-                                        'en-GB',
-                                        {
-                                            day: 'numeric',
-                                            month: 'short',
-                                        }
-                                    )
+                            {checkInDate
+                                ? new Date(checkInDate).toLocaleDateString('en-GB', {
+                                      day: 'numeric',
+                                      month: 'short',
+                                  })
                                 : ''}{' '}
                             -{' '}
-                            {bookingData.checkOutDate
-                                ? new Date(bookingData.checkOutDate).toLocaleDateString(
-                                        'en-GB',
-                                        {
-                                            day: 'numeric',
-                                            month: 'short',
-                                        }
-                                    )
+                            {checkOutDate
+                                ? new Date(checkOutDate).toLocaleDateString('en-GB', {
+                                      day: 'numeric',
+                                      month: 'short',
+                                  })
                                 : ''}
                         </Typography>
                     </Box>
                     <Box>
                         <Rating
                             value={parseFloat(hotel?.rating) || 5}
-                            color={'#F821DB'}
                             readOnly
                             sx={{ color: '#F821DB', fontSize: '2rem' }}
                         />
@@ -528,7 +518,7 @@ export default function RoomSelection({
                     sx={{
                         width: '100%',
                         height: '2px',
-                        background: 'linear-gradient(to right, #F821 , #F821DB, #F821)',
+                        background: 'linear-gradient(to right, #F821, #F821DB, #F821)',
                         my: 4,
                     }}
                 />
@@ -553,13 +543,14 @@ export default function RoomSelection({
                         </Typography>
                         <Typography variant="body1">
                             Unfortunately, there are no rooms available for your selected
-                            check-in and check-out dates. Please try selecting different dates
-                            or contact us for further assistance.
+                            check-in and check-out dates. Please try selecting different
+                            dates or contact us for further assistance.
                         </Typography>
                         <Button
+                            type="button"
                             variant="outlined"
                             color="primary"
-                            onClick={onBack}
+                            onClick={() => dispatch(setStep(4))}
                             sx={{ mt: 2 }}
                         >
                             Change Dates
@@ -583,9 +574,9 @@ export default function RoomSelection({
                     }}
                 >
                     {rooms.map((room) => {
-                        const isSelected = isRoomSelected(room)
-                        const canSelect = canSelectRoom(room)
-                        const isDisabled = !canSelect && !isSelected
+                        const isSelected = isRoomSelected(room);
+                        const canSelect = canSelectRoom(room);
+                        const isDisabled = !canSelect && !isSelected;
 
                         return (
                             <Grid item xs={12} md={6} key={room.id}>
@@ -626,7 +617,6 @@ export default function RoomSelection({
                                         >
                                             <img
                                                 src={
-                                                    // room.images[0] ??
                                                     'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4'
                                                 }
                                                 alt={room.room_type_name}
@@ -678,7 +668,9 @@ export default function RoomSelection({
                                                     paragraph
                                                 >
                                                     $
-                                                    {(parseFloat(room.price) * numberOfNights).toFixed(2)}{' '}
+                                                    {(parseFloat(room.price) * numberOfNights).toFixed(
+                                                        2
+                                                    )}{' '}
                                                     USD Total for {numberOfNights} night(s)
                                                     <br />
                                                     (Taxes and fees included)
@@ -688,7 +680,11 @@ export default function RoomSelection({
                                             </Box>
                                             {isSelected ? (
                                                 <Box
-                                                    sx={{ display: 'flex', alignItems: 'center', gap: 2 }}
+                                                    sx={{
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        gap: 2,
+                                                    }}
                                                 >
                                                     <Box
                                                         sx={{
@@ -698,43 +694,51 @@ export default function RoomSelection({
                                                         }}
                                                     >
                                                         <IconButton
+                                                            type="button"
                                                             size="large"
-                                                            onClick={() =>
+                                                            onClick={(e) =>
                                                                 handleQuantityChange(
                                                                     room,
-                                                                    getRoomQuantity(room) - 1
+                                                                    getRoomQuantity(room) - 1,
+                                                                    e
                                                                 )
                                                             }
                                                             disabled={getRoomQuantity(room) <= 1}
-                                                            
                                                         >
                                                             -
                                                         </IconButton>
                                                         <Typography
                                                             variant="body1"
-                                                            sx={{ minWidth: '2rem', textAlign: 'center' }}
+                                                            sx={{
+                                                                minWidth: '2rem',
+                                                                textAlign: 'center',
+                                                            }}
                                                         >
                                                             {getRoomQuantity(room)}
                                                         </Typography>
                                                         <IconButton
+                                                            type="button"
                                                             size="large"
-                                                            onClick={() =>
+                                                            onClick={(e) =>
                                                                 handleQuantityChange(
                                                                     room,
-                                                                    getRoomQuantity(room) + 1
+                                                                    getRoomQuantity(room) + 1,
+                                                                    e
                                                                 )
                                                             }
                                                             disabled={
-                                                                getRoomQuantity(room) >= room.available_rooms
+                                                                getRoomQuantity(room) >=
+                                                                room.available_rooms
                                                             }
                                                         >
                                                             +
                                                         </IconButton>
                                                     </Box>
                                                     <Button
+                                                        type="button"
                                                         variant="contained"
                                                         color="error"
-                                                        onClick={() => handleSelectRoom(room, 0)}
+                                                        onClick={(e) => handleSelectRoom(room, 0, e)}
                                                         sx={{ flex: 1 }}
                                                     >
                                                         Remove
@@ -750,10 +754,13 @@ export default function RoomSelection({
                                                 >
                                                     <span>
                                                         <Button
+                                                            type="button"
                                                             variant="contained"
                                                             color="primary"
                                                             fullWidth
-                                                            onClick={() => handleSelectRoom(room, 1)}
+                                                            onClick={(e) =>
+                                                                handleSelectRoom(room, 1, e)
+                                                            }
                                                             disabled={isDisabled}
                                                             sx={{
                                                                 mt: 2,
@@ -768,12 +775,12 @@ export default function RoomSelection({
                                     </CardContent>
                                 </Card>
                             </Grid>
-                        )
+                        );
                     })}
                 </Box>
 
                 {/* Selected Rooms Summary */}
-                {selectedRooms.length > 0 && (
+                {bookingState.selectedRooms.length > 0 && (
                     <Box
                         sx={{
                             my: 4,
@@ -786,7 +793,7 @@ export default function RoomSelection({
                         <Typography variant="h6" gutterBottom>
                             Selected Rooms
                         </Typography>
-                        {selectedRooms.map(({ room, quantity }) => (
+                        {bookingState.selectedRooms.map(({ room, quantity }) => (
                             <Box
                                 key={room.id}
                                 sx={{
@@ -818,7 +825,7 @@ export default function RoomSelection({
                             <Typography variant="h6">Total Amount</Typography>
                             <Typography variant="h6" color="primary">
                                 $
-                                {selectedRooms
+                                {bookingState.selectedRooms
                                     .reduce(
                                         (sum, { room, quantity }) =>
                                             sum + room.price * quantity * numberOfNights,
@@ -837,8 +844,8 @@ export default function RoomSelection({
                         bottom: 0,
                         left: 0,
                         right: 0,
-                        bgcolor:"#17171799",
-						backdropFilter:"blur(10px)",
+                        bgcolor: '#17171799',
+                        backdropFilter: 'blur(10px)',
                         p: 2,
                         boxShadow: 3,
                         zIndex: 1000,
@@ -850,17 +857,17 @@ export default function RoomSelection({
                 >
                     <Box>
                         <Typography variant="h6" gutterBottom>
-                            Group Size: {bookingData.groupSize} people
+                            Group Size: {groupSize} people
                         </Typography>
                         <Typography variant="body2" color="rgba(255,255,255,0.5)">
-                            Selected capacity: {totalCapacity} people
+                            Selected capacity: {bookingState.totalCapacity} people
                         </Typography>
                     </Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                        {totalCapacity < bookingData.groupSize ? (
+                        {bookingState.totalCapacity < groupSize ? (
                             <Alert severity="warning" sx={{ mb: 0 }}>
-                                Minimum {bookingData.groupSize - totalCapacity} more people need
-                                accommodation
+                                Minimum {groupSize - bookingState.totalCapacity} more people
+                                need accommodation
                             </Alert>
                         ) : (
                             <Alert severity="success" sx={{ mb: 0 }}>
@@ -868,11 +875,12 @@ export default function RoomSelection({
                             </Alert>
                         )}
                         <Button
+                            type="button"
                             variant="contained"
                             color="primary"
                             size="large"
                             onClick={handleNext}
-                            disabled={totalCapacity < bookingData.groupSize}
+                            disabled={bookingState.totalCapacity < groupSize}
                         >
                             Continue to Add-ons
                         </Button>
@@ -880,5 +888,5 @@ export default function RoomSelection({
                 </Box>
             </Container>
         </Box>
-    )
+    );
 }

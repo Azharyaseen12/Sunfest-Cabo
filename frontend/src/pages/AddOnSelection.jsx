@@ -14,10 +14,15 @@ import {
 } from '@mui/material'
 import { ChevronRight, DeleteIcon } from 'lucide-react'
 import api from '../utils/api'
+import { useDispatch, useSelector } from 'react-redux';
+import { setAddOns, setStep } from '../store/slices/bookingSlice';
 
-export default function AddOnSelection({ eventId, event_date_id, bookingData, setBookingData, onNext }) {
-    const [addOns, setAddOns] = useState([])
-    const [selectedAddOns, setSelectedAddOns] = useState(bookingData.selectedAddOns || [])
+
+export default function AddOnSelection() {
+    const { selectedAddOns} = useSelector((state) => state.booking);
+	const dispatch = useDispatch();
+    const [allAddOns, setAllAddOns] = useState([])
+    const [currentSelectedAddOns, setCurrentSelectedAddOns] = useState(selectedAddOns || [])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
 
@@ -26,7 +31,7 @@ export default function AddOnSelection({ eventId, event_date_id, bookingData, se
             try {
                 setLoading(true)
                 const eventDateResponse = await api.get(`/event/add-ons/`)
-                setAddOns(eventDateResponse.data)
+                setAllAddOns(eventDateResponse.data)
                 setError(null)
             } catch (err) {
                 setError('Failed to load add-ons. Please try again later.')
@@ -36,36 +41,36 @@ export default function AddOnSelection({ eventId, event_date_id, bookingData, se
             }
         }
         fetchAddOns()
-    }, [eventId, event_date_id])
+    }, [])
 
     const handleAddItem = (addon) => {
-        const existingIndex = selectedAddOns.findIndex(item => item.addOn.id === addon.id)
+        const existingIndex = currentSelectedAddOns.findIndex(item => item.addOn.id === addon.id)
         
         if (existingIndex >= 0) {
-            const updatedSelections = [...selectedAddOns]
+            const updatedSelections = [...currentSelectedAddOns]
             updatedSelections[existingIndex] = {
                 addOn: addon,
                 quantity: 1,
                 totalPrice: addon.price_per_person
             }
-            setSelectedAddOns(updatedSelections)
+            setCurrentSelectedAddOns(updatedSelections)
         } else {
             const newSelection = {
                 addOn: addon,
                 quantity: 1,
                 totalPrice: addon.price_per_person
             }
-            setSelectedAddOns(prev => [...prev, newSelection])
+            setCurrentSelectedAddOns(prev => [...prev, newSelection])
         }
     }
 
     const handleRemoveSelection = (index) => {
-        setSelectedAddOns((prev) => prev.filter((_, i) => i !== index))
+        setCurrentSelectedAddOns((prev) => prev.filter((_, i) => i !== index))
     }
 
     const handleUpdateQuantity = (index, newQuantity) => {
         if (newQuantity < 1) return
-        setSelectedAddOns(prev => {
+        setCurrentSelectedAddOns(prev => {
             const updated = [...prev]
             const item = updated[index]
             updated[index] = {
@@ -78,7 +83,7 @@ export default function AddOnSelection({ eventId, event_date_id, bookingData, se
     }
 
     const getTotalPrice = () => {
-        return selectedAddOns.reduce(
+        return currentSelectedAddOns.reduce(
             (total, selection) => parseFloat(total) + parseFloat(selection.totalPrice),
             0
         )
@@ -86,16 +91,16 @@ export default function AddOnSelection({ eventId, event_date_id, bookingData, se
 
     const handleNext = () => {
         const updatedBookingData = {
-            ...bookingData,
-            selectedAddOns: selectedAddOns.map((item) => ({
+            addOns : currentSelectedAddOns
+            .map((item) => ({
                 addOn: item.addOn,
                 quantity: item.quantity,
                 totalPrice: item.totalPrice,
             })),
-            totalPrice: (bookingData.totalPrice || 0) + getTotalPrice()
+            totalPrice: getTotalPrice()
         }
-        setBookingData(updatedBookingData)
-        onNext()
+        dispatch(setAddOns(updatedBookingData))
+        dispatch(setStep(6))
     }
 
     if (loading) {
@@ -135,8 +140,8 @@ export default function AddOnSelection({ eventId, event_date_id, bookingData, se
                         pb: 8,
                     }}
                 >
-                    {addOns.map((addon) => {
-                        const selections = selectedAddOns.filter(
+                    {allAddOns.map((addon) => {
+                        const selections = currentSelectedAddOns.filter(
                             (selected) => selected.addOn.id === addon.id
                         )
                         const isSelected = selections.length > 0
@@ -193,7 +198,7 @@ export default function AddOnSelection({ eventId, event_date_id, bookingData, se
                                         {isSelected && (
                                             <Box>
                                                 {selections.map((selection, index) => {
-                                                    const globalIndex = selectedAddOns.findIndex(
+                                                    const globalIndex = currentSelectedAddOns.findIndex(
                                                         item => item.addOn.id === addon.id
                                                     )
                                                     
@@ -206,50 +211,31 @@ export default function AddOnSelection({ eventId, event_date_id, bookingData, se
                                                                 gap: 2,
                                                             }}
                                                         >
-                                                            <Box sx={{ 
-                                                                display: 'flex', 
-                                                                alignItems: 'center', 
-                                                                gap: 1,
-                                                                bgcolor: 'rgba(255, 255, 255, 0.1)',
-                                                                borderRadius: 1,
-                                                                p: '4px',
-                                                            }}>
+                                                            <Box
+                                                                sx={{
+                                                                    display: 'flex',
+                                                                    alignItems: 'center',
+                                                                    gap: 1,
+                                                                }}
+                                                            >
                                                                 <IconButton
-                                                                    size="medium"
+                                                                    size="large"
                                                                     onClick={() => handleUpdateQuantity(globalIndex, selection.quantity - 1)}
                                                                     disabled={selection.quantity <= 1}
-                                                                    sx={{
-                                                                        color: 'white',
-                                                                        p: '8px',
-                                                                        '&:hover': { 
-                                                                            bgcolor: 'rgba(255, 255, 255, 0.2)' 
-                                                                        },
-                                                                    }}
                                                                 >
                                                                     -
                                                                 </IconButton>
                                                                 <Typography
                                                                     variant="body1"
-                                                                    sx={{ 
-                                                                        minWidth: '24px', 
-                                                                        textAlign: 'center',
-                                                                        color: 'white'
-                                                                    }}
+                                                                    sx={{ minWidth: '2rem', textAlign: 'center' }}
                                                                 >
                                                                     {selection.quantity}
                                                                 </Typography>
                                                                 <IconButton
-                                                                    size="medium"
+                                                                    size="large"
                                                                     onClick={() => handleUpdateQuantity(globalIndex, selection.quantity + 1)}
                                                                     disabled={addon.remaining_inventory !== null && 
-                                                                              (selection.quantity >= addon.remaining_inventory)}
-                                                                    sx={{
-                                                                        color: 'white',
-                                                                        p: '8px',
-                                                                        '&:hover': { 
-                                                                            bgcolor: 'rgba(255, 255, 255, 0.2)' 
-                                                                        },
-                                                                    }}
+                                                                            (selection.quantity >= addon.remaining_inventory)}
                                                                 >
                                                                     +
                                                                 </IconButton>
@@ -305,7 +291,7 @@ export default function AddOnSelection({ eventId, event_date_id, bookingData, se
                 >
                     <Container maxWidth="xl">
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            {selectedAddOns.length > 0 ? (
+                            {currentSelectedAddOns.length > 0 ? (
                                 <>
                                     <Typography variant="h6">
                                         Total: ${getTotalPrice().toFixed(2)} USD

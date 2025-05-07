@@ -11,29 +11,29 @@ import {
 	Stack,
 	Tooltip,
 } from '@mui/material'
+import { useSelector, useDispatch } from 'react-redux';
+import { setGroupSize, setStep } from '../store/slices/bookingSlice';
 
-export default function GroupSizeSelection({packageId, onNext, setBookingData, bookingData}) {
-	const [selectedSize, setSelectedSize] = useState(bookingData?.groupSize || 1)
+export default function GroupSizeSelection() {
+	const dispatch = useDispatch();
+	const { packageId , groupSize , pricePerPerson} = useSelector((state) => state.booking);
+	const [selectedSize, setSelectedSize] = useState(groupSize || 1)
 	const [groups, setGroups] = useState([])
 
 	// Default group sizes from 1 to 8
 	const defaultGroupSizes = Array.from({length: 8}, (_, i) => ({
 		id: i+1,
 		number_of_persons: i+1,
-		base_price: bookingData?.pricePerPerson || 0
+		base_price: pricePerPerson || 0
 	}))
 
 	useEffect(() => {
-		// Set default groups
 		setGroups(defaultGroupSizes)
-	}, [packageId, bookingData])
+	}, [packageId,groupSize,defaultGroupSizes])
 
 	const handleNext = () => {
-		setBookingData({
-			...bookingData, 
-			groupSize: selectedSize,
-		})
-		onNext()
+		dispatch(setGroupSize(selectedSize))
+		dispatch(setStep(3))
 	}
 
 	return (
@@ -154,7 +154,7 @@ export default function GroupSizeSelection({packageId, onNext, setBookingData, b
 															>
 																<Typography variant="h6">
 																	From $
-																	{parseFloat(bookingData?.pricePerPerson || 0).toFixed(2)}{' '}
+																	{parseFloat(pricePerPerson || 0).toFixed(2)}{' '}
 																	USD
 																	<Typography
 																		component="span"
@@ -168,7 +168,7 @@ export default function GroupSizeSelection({packageId, onNext, setBookingData, b
 																	$
 																	{(
 																		group.number_of_persons *
-																		parseFloat(bookingData?.pricePerPerson || 0)
+																		parseFloat(pricePerPerson || 0)
 																	).toFixed(2)}{' '}
 																	USD Total
 																</Typography>

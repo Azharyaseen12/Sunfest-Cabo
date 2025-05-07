@@ -1,24 +1,30 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { setTicket, setStep } from '../store/slices/bookingSlice';
 import {
-    Box,
-    Container,
-    Typography,
-    Radio,
-    RadioGroup,
-    FormControlLabel,
-    Button,
-    Breadcrumbs,
-    Stack,
-    Tooltip,
-} from '@mui/material'
-import api from '../utils/api'
+  Box,
+  Container,
+  Typography,
+  Button,
+} from '@mui/material';
+import api from '../utils/api';
 
-export default function SelectYourTicketType({ packageId, onNext, setBookingData, bookingData }) {
-    const [selectedTicket, setSelectedTicket] = useState(bookingData?.selectedTicket || null)
-    const [selectedDate, setSelectedDate] = useState(bookingData?.selectedDate || null)
-    const [ticketTypes, setTicketTypes] = useState([])
+export default function SelectYourTicketType() {
+  const dispatch = useDispatch();
+  const { packageId } = useSelector((state) => state.booking);
+  const [ticketTypes, setTicketTypes] = useState([]);
+  const [selectedTicket, setSelectedTicket] = useState(null);
+  const [selectedDate, setSelectedDate] = useState(null);
 
-
+  const handleNext = (ticket) => {
+    dispatch(setTicket({
+      id: ticket.id,
+      date: selectedDate,
+      ticketName: ticket.ticket_name,
+      price: parseFloat(ticket.price).toFixed(2)
+    }));
+    dispatch(setStep(1));
+  };
 
     const handleDateSelect = (date, ticketId) => {
         setSelectedDate(date)
@@ -42,16 +48,7 @@ export default function SelectYourTicketType({ packageId, onNext, setBookingData
         }
         return true
     }
-    const handleNext = (ticket) => {
-        onNext();
-        setBookingData(prev => ({
-            ...prev,
-            selectedTicket: ticket.id,
-            selectedDate: selectedDate,
-            after_party_type : ticket.ticket_name,
-            ticketPrice: (parseFloat(ticket.price)).toFixed(2)
-        }))
-    }
+
     useEffect(() => {
         const fetchInventories = async () => {
             try {

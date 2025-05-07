@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Link, useLocation } from 'react-router-dom';
 import { Box, Breadcrumbs, Typography } from '@mui/material';
 import ChevronRight from '@mui/icons-material/ChevronRight';
-import LockIcon from '@mui/icons-material/Lock'; // Import LockIcon
+import { useSelector, useDispatch } from 'react-redux';
+import { setStep , setPackage } from '../store/slices/bookingSlice';
 
-import PackageSelection from './PackageSelection';
 import SelectYourTicketType from './SelectYourTicketType';
 import GroupSizeSelection from './GroupSizeSelection';
 import AccommodationSelection from './AccommodationSelection';
@@ -16,136 +16,67 @@ import Header from '../components/Header';
 import AfterPartySelection from './AfterPartySelection';
 
 const BookingStepper = () => {
-  const [direction, setDirection] = useState('right');
-  const [bookingData, setBookingData] = useState({});
-  const [currentStepIndex, setCurrentStepIndex] = useState(0);
+  const dispatch = useDispatch();
+  const { step, hotel } = useSelector((state) => state.booking);
   const location = useLocation();
   const packageId = location?.state?.packageId;
   const pricePerPerson = location?.state?.pricePerPerson;
 
-  console.log("packageId", packageId);
-
   useEffect(() => {
-    setBookingData(prev => ({
-      ...prev,
-      packageId: packageId,
-      pricePerPerson: pricePerPerson
-    }))
-  }, [pricePerPerson, packageId])
-
-  console.log("Booking Data", bookingData);
+    dispatch(setPackage({packageId:packageId,pricePerPerson:pricePerPerson}))
+  },[packageId,pricePerPerson,dispatch])
 
   const steps = [
     { 
       path: 'ticket-type', 
-      component: <SelectYourTicketType 
-        packageId={packageId} 
-        onNext={() => moveToStep(1)}
-        onBack={() => moveToStep(0)}
-        setBookingData={setBookingData}
-        bookingData={bookingData}
-      />, 
+      component: <SelectYourTicketType />, 
       title: 'Ticket Type' 
     },
     { 
       path: 'after-party', 
-      component: <AfterPartySelection 
-        packageId={packageId} 
-        onNext={() => moveToStep(2)}
-        onBack={() => moveToStep(1)}
-        bookingData={bookingData}
-        setBookingData={setBookingData}
-      />,
+      component: <AfterPartySelection />,
       title: 'After Party'
     },
     { 
       path: 'group-size', 
-      component: <GroupSizeSelection 
-        packageId={packageId} 
-        onNext={() => moveToStep(3)}
-        onBack={() => moveToStep(2)}
-        setBookingData={setBookingData}
-        bookingData={bookingData}
-      />, 
+      component: <GroupSizeSelection />, 
       title: 'Group Size' 
     },
     { 
       path: 'accommodation', 
-      component: <AccommodationSelection 
-        packageId={packageId} 
-        onNext={() => moveToStep(4)}
-        onSkip={() => moveToStep(5)}
-        onBack={() => moveToStep(3)}
-        setBookingData={setBookingData}
-        bookingData={bookingData}
-      />, 
+      component: <AccommodationSelection />, 
       title: 'Accommodation' 
     },
     { 
       path: 'rooms', 
-      component: <RoomSelection 
-        packageId={packageId} 
-        onNext={() => moveToStep(5)}
-        onBack={() => moveToStep(4)}
-        setBookingData={setBookingData}
-        bookingData={bookingData}
-      />, 
+      component: <RoomSelection />, 
       title: 'Rooms',
-      disabled: !bookingData.hotel // Add disabled condition
+      disabled: !hotel
     },
     { 
       path: 'add-ons', 
-      component: <AddOnSelection 
-        packageId={packageId} 
-        onNext={() => moveToStep(6)}
-        onBack={() => moveToStep(5)}
-        bookingData={bookingData}
-        setBookingData={setBookingData}
-      />, 
+      component: <AddOnSelection />, 
       title: 'Add-ons' 
     },
     { 
       path: 'review', 
-      component: <ReviewPackage 
-        packageId={packageId} 
-        onBack={() => moveToStep(5)}
-        bookingData={bookingData}
-        setBookingData={setBookingData}
-      />, 
+      component: <ReviewPackage />, 
       title: 'Review' 
     },
   ];
 
-  // Define current step
-  const currentStep = steps[currentStepIndex];
+  const currentStep = steps[step];
 
-  useEffect(() => {
-    // If packageId exists on mount, skip to step 1
-    if (packageId && currentStepIndex === 0 && steps[0].skipIfPackageId) {
-      moveToStep(1);
-    }
-  }, [packageId]);
-
-  // Move between steps
-  const moveToStep = (newIndex) => {
-    if (newIndex >= 0 && newIndex < steps.length) {
-      // Skip the packages step if packageId exists and we're trying to go to packages
-      if (newIndex === 0 && packageId && steps[0].skipIfPackageId) {
-        return;
-      }
-      
+  const moveToStep = (newStep) => {
+    if (newStep >= 0 && newStep < steps.length) {
       // If trying to go to Rooms step without a hotel selected, redirect to Accommodation
-      if (newIndex === 4 && !bookingData.hotel) {
-        newIndex = 3; // Move to Accommodation step instead
+      if (newStep === 4 && !hotel) {
+        newStep = 3;
       }
-      
-      const newDirection = newIndex > currentStepIndex ? 'right' : 'left';
-      setDirection(newDirection);
-      setCurrentStepIndex(newIndex);
+      dispatch(setStep(newStep));
     }
   };
 
-  // Animation variants
   const variants = {
     enter: (direction) => ({
       x: direction === 'right' ? 300 : -300,
@@ -172,7 +103,6 @@ const BookingStepper = () => {
         minHeight: '80vh',
         mt: 16,
       }}>
-        {/* Breadcrumbs - centered with max-width */}
         <Box sx={{ 
           width: '100%',
           maxWidth: '90%',
@@ -180,16 +110,11 @@ const BookingStepper = () => {
           <Breadcrumbs
             separator={<ChevronRight fontSize="small" sx={{ color: '#F821DB' }} />}
           >
-            {steps.map((step, index) => {
-              // Skip showing packages in breadcrumbs if packageId exists and it's the packages step
-              if (packageId && step.skipIfPackageId && index > currentStepIndex) {
-                return null;
-              }
-              
-              if (index < currentStepIndex) {
+            {steps.map((stepItem, index) => {
+              if (index < step) {
                 return (
                   <Typography
-                    key={step.path}
+                    key={stepItem.path}
                     onClick={() => moveToStep(index)}
                     style={{
                       color: 'white',
@@ -197,35 +122,34 @@ const BookingStepper = () => {
                       cursor: 'pointer',
                     }}
                   >
-                    {step.title}
+                    {stepItem.title}
                   </Typography>
                 );
-              } else if (index === currentStepIndex) {
+              } else if (index === step) {
                 return (
-                  <Typography key={step.path} color="primary">
-                    {step.title}
+                  <Typography key={stepItem.path} color="primary">
+                    {stepItem.title}
                   </Typography>
                 );
               } else {
                 return (
                   <Box 
-                    key={step.path}
+                    key={stepItem.path}
                     sx={{ 
                       display: 'flex', 
                       alignItems: 'center',
-                      cursor: step.disabled ? "not-allowed" : 'default',
+                      cursor: stepItem.disabled ? "not-allowed" : 'default',
                     }}
-                    onClick={step.disabled ? () => moveToStep(3) : undefined}
+                    onClick={stepItem.disabled ? () => moveToStep(3) : undefined}
                   >
                     <Typography
                       color="white"
                       sx={{
-                        mr: step.disabled ? 1 : 0,
+                        mr: stepItem.disabled ? 1 : 0,
                       }}
                     >
-                      {step.title}
+                      {stepItem.title}
                     </Typography>
-                    {step.disabled && <LockIcon fontSize="small" sx={{ color: 'white' }} />}
                   </Box>
                 );
               }
@@ -233,7 +157,6 @@ const BookingStepper = () => {
           </Breadcrumbs>
         </Box>
 
-        {/* Current Step Content - takes full height and 90% width */}
         <Box sx={{ 
           width: '90%',
           flex: 1,
@@ -241,10 +164,9 @@ const BookingStepper = () => {
           display: 'flex',
           flexDirection: 'column'
         }}>
-          <AnimatePresence custom={direction} initial={false}>
+          <AnimatePresence initial={false}>
             <motion.div
               key={currentStep.path}
-              custom={direction}
               variants={variants}
               initial="enter"
               animate="center"

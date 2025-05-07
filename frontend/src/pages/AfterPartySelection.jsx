@@ -12,10 +12,16 @@ import {
 import api from '../utils/api'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked'
+import { useSelector, useDispatch } from 'react-redux';
+import { setAfterParties, setStep } from '../store/slices/bookingSlice';
 
-export default function AfterPartySelection({ packageId, onNext, setBookingData, bookingData }) {
-  const [selectedParties, setSelectedParties] = useState(bookingData?.afterParties || [])
-  const [afterParties, setAfterParties] = useState([])
+
+export default function AfterPartySelection() {
+  const dispatch = useDispatch();
+  const { packageId , afterParties} = useSelector((state) => state.booking);
+
+  const [selectedParties, setSelectedParties] = useState(afterParties|| [])
+  const [parties,setParties] = useState([])
   const [errorMessage, setErrorMessage] = useState(null)
 
   const handleSelect = (party) => {
@@ -47,24 +53,23 @@ export default function AfterPartySelection({ packageId, onNext, setBookingData,
   const handleNext = () => {
     const totalAmount = selectedParties.reduce((sum, party) => sum + parseFloat(party.price_per_person), 0);
     
-    setBookingData(prev => ({
-      ...prev,
+    dispatch(setAfterParties({
       afterParties: selectedParties,
       partyPrice: totalAmount,
     }));
-    onNext();
+    dispatch(setStep(2))
   }
   useEffect(() => {
     const fetchData = async () => {
       try {
         const response = await api.get(`event/after-parties/`)
-        setAfterParties(response.data)
+        setParties(response.data)
       } catch (error) {
         console.error('Error fetching after parties:', error)
       }
     }
     fetchData()
-  }, [packageId, bookingData.after_party_type])
+  }, [packageId])
 
   return (
     <Box className="min-h-[85vh] bg-transparent text-white">
@@ -89,7 +94,7 @@ export default function AfterPartySelection({ packageId, onNext, setBookingData,
             gap: 3,
             mt: 2
           }}>
-            {afterParties.map((party) => {
+            {parties.map((party) => {
               const isSelected = selectedParties.some(p => p.id === party.id)
               const isSoldOut = party.remaining_capacity <= 0
               const sameDateSelected = selectedParties.some(p => 
