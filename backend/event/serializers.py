@@ -93,15 +93,20 @@ class AfterPartySerializer(serializers.ModelSerializer):
 
 
 class HotelSerializer(serializers.ModelSerializer):
+    images = serializers.SerializerMethodField()
+
+    def get_images(self, obj):
+        return obj.images.all().values("id", "image")
+
     class Meta:
         model = Hotel
-        fields = ["id", "hotel_name", "address", "rating", "description"]
+        fields = ["id", "hotel_name", "address", "rating", "description", "images"]
 
 
 class RoomTypeSerializer(serializers.ModelSerializer):
     class Meta:
         model = RoomType
-        fields = ["id", "room_type_name", "description", "capacity"]
+        fields = ["id", "room_type_name", "description", "capacity", "image"]
 
 
 class RoomInventorySerializer(serializers.ModelSerializer):
@@ -116,6 +121,9 @@ class RoomInventorySerializer(serializers.ModelSerializer):
             "total_rooms",
             "remaining_rooms",
             "price_per_night",
+            "resort_fee_percentage",
+            "vat_percentage",
+            "logging_price_percentage",
         ]
 
 
@@ -130,6 +138,7 @@ class AddOnSerializer(serializers.ModelSerializer):
             "total_inventory",
             "remaining_inventory",
             "is_per_person",
+            "image",
         ]
 
 

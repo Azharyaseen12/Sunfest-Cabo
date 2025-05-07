@@ -57,6 +57,9 @@ class TicketType(models.Model):
     ticket_name = models.CharField(max_length=50)
     price = models.DecimalField(max_digits=10, decimal_places=2)
     description = models.TextField(blank=True, null=True)
+    is_standard_hotel_included = models.BooleanField(default=False)
+    is_transportation_included = models.BooleanField(default=False)
+    is_vip_after_party_included = models.BooleanField(default=False)
 
     class Meta:
         db_table = "ticket_types"
@@ -192,12 +195,28 @@ class Hotel(models.Model):
         return self.hotel_name
 
 
+# Hotel Images
+class HotelImage(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    hotel = models.ForeignKey(Hotel, on_delete=models.CASCADE, related_name="images")
+    image = models.ImageField(upload_to="hotels/")
+
+    class Meta:
+        db_table = "hotel_images"
+        verbose_name = "Hotel Image"
+        verbose_name_plural = "Hotel Images"
+
+    def __str__(self):
+        return f"{self.hotel.hotel_name} - {self.image.name}"
+
+
 # RoomType model
 class RoomType(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     room_type_name = models.CharField(max_length=50)
     description = models.TextField(blank=True, null=True)
     capacity = models.PositiveIntegerField(default=2)
+    image = models.ImageField(upload_to="room_types/", null=True, blank=True)
 
     class Meta:
         db_table = "room_types"
@@ -217,6 +236,12 @@ class RoomInventory(models.Model):
     stay_date = models.DateField()
     total_rooms = models.PositiveIntegerField()
     price_per_night = models.DecimalField(max_digits=10, decimal_places=2)
+    resort_fee_percentage = models.IntegerField(default=4)
+    vat_percentage = models.DecimalField(max_digits=10, decimal_places=2, default=0.16)
+    logging_price_percentage = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0.04
+    )
+
     # CHANGE: Removed remaining_rooms field
     # CHANGE: Removed constraints for remaining_rooms
 
@@ -260,6 +285,7 @@ class AddOn(models.Model):
     )
     total_inventory = models.PositiveIntegerField(null=True, blank=True)
     is_per_person = models.BooleanField(default=True)
+    image = models.ImageField(upload_to="add_ons/", null=True, blank=True)
     # CHANGE: Removed remaining_inventory field
     # CHANGE: Removed constraints for remaining_inventory
 
